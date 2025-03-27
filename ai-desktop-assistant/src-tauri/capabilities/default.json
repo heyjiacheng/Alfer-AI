@@ -1,0 +1,106 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Capability for the main window",
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    {
+      "identifier": "core:default",
+      "permission": "core:default"
+    },
+    {
+      "identifier": "opener:default",
+      "permission": "opener:default"
+    },
+    {
+      "identifier": "http:default",
+      "allow": [
+        {
+          "url": "http://localhost:8080/*"
+        },
+        {
+          "url": "https://*.tauri.app"
+        }
+      ],
+      "deny": [
+        {
+          "url": "https://private.tauri.app"
+        }
+      ]
+    },
+    {
+      "identifier": "upload:default",
+      "permission": "upload:default"
+    },
+    {
+      "identifier": "fs:default",
+      "permission": "fs:default"
+    },
+    {
+      "identifier": "fs:allow-read-file",
+      "permission": "fs:allow-read-file"
+    },
+    {
+      "identifier": "fs:allow-write-file",
+      "permission": "fs:allow-write-file"
+    },
+    {
+      "identifier": "fs:scope-cache",
+      "allow": [{"path": "$CACHE/*"}]
+    },
+    {
+      "identifier": "fs:scope-appdata",
+      "allow": [{"path": "$APPDATA/*"}]
+    },
+    {
+      "identifier": "fs:scope-temp",
+      "allow": [{"path": "$TEMP/*"}]
+    },
+    {
+      "identifier": "fs:allow-app-write",
+      "permission": "fs:allow-app-write"
+    },
+    {
+      "identifier": "fs:allow-app-write-recursive",
+      "permission": "fs:allow-app-write-recursive"
+    },
+    {
+      "identifier": "fs:allow-appcache-write",
+      "permission": "fs:allow-appcache-write"
+    },
+    {
+      "identifier": "fs:allow-appcache-write-recursive",
+      "permission": "fs:allow-appcache-write-recursive"
+    },
+    {
+      "identifier": "fs:allow-appconfig-write",
+      "permission": "fs:allow-appconfig-write"
+    },
+    {
+      "identifier": "fs:allow-appconfig-write-recursive",
+      "permission": "fs:allow-appconfig-write-recursive"
+    },
+    {
+      "identifier": "fs:allow-appdata-write",
+      "permission": "fs:allow-appdata-write"
+    },
+    {
+      "identifier": "fs:allow-appdata-write-recursive",
+      "permission": "fs:allow-appdata-write-recursive"
+    },
+    {
+      "identifier": "core:path:default",
+      "permission": "core:path:default"
+    },
+    {
+      "identifier": "core:webview:default",
+      "permission": "core:webview:default"
+    },
+    {
+      "identifier": "core:webview:allow-internal-toggle-devtools",
+      "permission": "core:webview:allow-internal-toggle-devtools"
+    }
+  ]
+}

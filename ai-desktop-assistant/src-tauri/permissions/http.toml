@@ -1,0 +1,6 @@
+[[permission]]
+identifier = "http:default"
+description = "Enables HTTP requests to localhost:8080"
+allows = [
+    { scope = { url = "http://localhost:8080/*" } }
+] 
