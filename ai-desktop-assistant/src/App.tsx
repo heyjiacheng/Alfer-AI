@@ -13,6 +13,9 @@ function ThemeWrapper({ children }: { children: React.ReactNode }) {
   const theme = createTheme({
     palette: {
       mode: isDarkMode ? 'dark' : 'light',
+      primary: {
+        main: '#562858',
+      },
       background: {
         default: isDarkMode ? '#121212' : '#f5f5f5',
         paper: isDarkMode ? '#1E1E1E' : '#FFFFFF'

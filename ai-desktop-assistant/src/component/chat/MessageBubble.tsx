@@ -33,7 +33,7 @@ export default React.memo(function MessageBubble({ message, isUser, onViewSource
   };
 
   const handleViewSources = () => {
-    console.log("点击查看来源按钮，消息源:", message.sources);
+    console.log("View source button clicked, message sources:", message.sources);
     if (message.sources && message.sources.length > 0 && onViewSources) {
       onViewSources(message.sources);
     }
@@ -131,7 +131,7 @@ export default React.memo(function MessageBubble({ message, isUser, onViewSource
                       }
                     }}
                   >
-                    查看来源 ({message.sources?.length})
+                    Sources ({message.sources?.length})
                   </Button>
                 </Box>
               )}

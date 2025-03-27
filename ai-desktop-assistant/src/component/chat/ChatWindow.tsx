@@ -114,7 +114,7 @@ export default function ChatWindow() {
 
   useEffect(() => {
     if (sourcesOpen) {
-      console.log("打开了源信息抽屉，当前源数据:", currentSources);
+      console.log("Source information drawer opened, current sources:", currentSources);
     }
   }, [sourcesOpen, currentSources]);
 
@@ -133,7 +133,7 @@ export default function ChatWindow() {
         msg => !msg.isUser && msg.sources && msg.sources.length > 0
       );
       if (messagesWithSources.length > 0) {
-        console.log(`当前会话包含 ${messagesWithSources.length} 条带有源信息的消息`);
+        console.log(`Current conversation contains ${messagesWithSources.length} messages with source information`);
       }
     }
   }, [activeConversation?.messages]);
@@ -163,7 +163,7 @@ export default function ChatWindow() {
 
   const getSelectedLibrariesDisplay = () => {
     if (selectedLibraries.length === 0) {
-      return "知识库";
+      return "Knowledge Base";
     } else if (selectedLibraries.length === 1) {
       const lib = allLibraries.find((lib) => lib.id === selectedLibraries[0]);
       if (lib) {
@@ -171,9 +171,9 @@ export default function ChatWindow() {
           ? `${lib.name.substring(0, 8)}...`
           : lib.name;
       }
-      return "知识库";
+      return "Knowledge Base";
     } else {
-      return `${selectedLibraries.length} 个知识库`;
+      return `${selectedLibraries.length} Knowledge Bases`;
     }
   };
 
@@ -266,12 +266,22 @@ export default function ChatWindow() {
           <Typography variant="h3" gutterBottom sx={{ fontWeight: 600, mb: 4 }}>
             Álfer AI Assistant
           </Typography>
-          <Box sx={{ width: "100%", maxWidth: 800, px: 2 }}>
-            <Box sx={{ mb: 1 }}>
+          <Box sx={{ width: "100%", maxWidth: 850, px: 2 }}>
+            <Paper
+              elevation={3}
+              sx={{
+                borderRadius: 7,
+                p: 1.5,
+                bgcolor: "background.paper",
+                boxShadow: "0 3px 10px rgba(0, 0, 0, 0.08)",
+                mb: 2,
+                width: "100%",
+              }}
+            >
               <TextField
                 fullWidth
                 variant="outlined"
-                placeholder="输入消息开始对话..."
+                placeholder="Enter a message to start conversation..."
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
@@ -281,45 +291,83 @@ export default function ChatWindow() {
                   }
                 }}
                 multiline
-                maxRows={4}
+                maxRows={1}
+                sx={{ 
+                  mb: 1.5,
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 3,
+                    '& fieldset': {
+                      border: 'none',
+                    },
+                    '&:hover fieldset': {
+                      border: 'none',
+                    },
+                    '&.Mui-focused fieldset': {
+                      border: 'none',
+                    }
+                  },
+                  '& .MuiInputBase-inputMultiline': {
+                    py: 0.7,
+                    px: 1.5,
+                    lineHeight: 1.3
+                  }
+                }}
                 InputProps={{
                   endAdornment: (
                     <IconButton
                       onClick={handleSend}
                       color="primary"
                       disabled={!input.trim()}
-                      sx={{ mb: 0.5 }}
+                      sx={{ 
+                        width: 32,
+                        height: 32,
+                        p: 0.7,
+                        mr: 0.5
+                      }}
                     >
-                      <SendIcon />
+                      <SendIcon fontSize="small" />
                     </IconButton>
                   ),
                   sx: {
-                    borderRadius: 4,
                     bgcolor: "background.paper",
-                    "& textarea": { py: 1.2 },
                   },
                 }}
               />
-            </Box>
 
             <Box
               sx={{
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
+                mb: 1,
               }}
             >
-              <Box sx={{ display: "flex", gap: 2, flexGrow: 1 }}>
-                <FormControl size="small" sx={{ minWidth: 120 }}>
-                  <InputLabel>AI 模型</InputLabel>
+              <Box sx={{ display: "flex", gap: 1.5, flexGrow: 1 }}>
+                <FormControl size="small" sx={{ 
+                  minWidth: 115,
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 3,
+                    height: 36,
+                    '& fieldset': {
+                      borderColor: 'rgba(0, 0, 0, 0.1)',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: 'primary.main',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: 'primary.main',
+                    }
+                  }
+                }}>
+                  <InputLabel sx={{ fontSize: '0.85rem' }}>AI Model</InputLabel>
                   <Select
                     value={selectedLibrary}
                     onChange={(e) =>
                       setSelectedLibrary(e.target.value as string)
                     }
-                    label="AI 模型"
+                    label="AI Model"
                     sx={{
-                      "& .MuiSelect-select": { py: 1, fontSize: "0.875rem" },
+                      "& .MuiSelect-select": { py: 0.7, fontSize: "0.85rem" },
                     }}
                   >
                     <MenuItem value="deepseek-r1">DeepSeek R1</MenuItem>
@@ -329,51 +377,37 @@ export default function ChatWindow() {
                   </Select>
                 </FormControl>
 
-                <FormControl size="small" sx={{ minWidth: 120 }}>
-                  <InputLabel
-                    shrink
-                    sx={{
-                      bgcolor: "background.default",
-                      px: 0.5,
-                      "&.MuiInputLabel-shrink": {
-                        transform: "translate(9px, -8px) scale(0.75)",
-                      },
-                    }}
-                  >
-                    知识库选择
-                  </InputLabel>
-                  <Button
+                <FormControl size="small" sx={{ 
+                  minWidth: 150,
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 3,
+                    height: 36,
+                    '& fieldset': {
+                      borderColor: 'rgba(0, 0, 0, 0.1)',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: 'primary.main',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: 'primary.main',
+                    }
+                  }
+                }}>
+                  <InputLabel sx={{ fontSize: '0.85rem' }}>Knowledge Base</InputLabel>
+                  <Select
                     ref={homeKnowledgeButtonRef}
+                    value=""
                     onClick={() => setHomeKnowledgeMenuOpen(true)}
+                    label="Knowledge Base"
                     sx={{
-                      textTransform: "none",
-                      justifyContent: "flex-start",
-                      px: 1.5,
-                      py: 1,
-                      border: "1px solid rgba(0, 0, 0, 0.23)",
-                      borderRadius: 1,
-                      bgcolor: "background.default",
-                      color: "text.primary",
-                      fontSize: "0.875rem",
-                      minHeight: 40,
-                      maxWidth: 120,
-                      "&:hover": {
-                        bgcolor: "background.default",
-                        borderColor: "primary.main",
-                      },
+                      "& .MuiSelect-select": { py: 0.7, fontSize: "0.85rem" },
                     }}
+                    renderValue={() => getSelectedLibrariesDisplay()}
                   >
-                    <Typography
-                      noWrap
-                      sx={{
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        maxWidth: "100%",
-                      }}
-                    >
-                      {getSelectedLibrariesDisplay()}
-                    </Typography>
-                  </Button>
+                    <MenuItem value="" disabled>
+                      <em>Select Knowledge Base</em>
+                    </MenuItem>
+                  </Select>
                   <Menu
                     anchorEl={homeKnowledgeButtonRef.current}
                     open={homeKnowledgeMenuOpen}
@@ -399,7 +433,7 @@ export default function ChatWindow() {
                           size="small"
                           sx={{ p: 0.5, mr: 1 }}
                         />
-                        不使用知识库
+                        No Knowledge Base
                       </Box>
                     </MenuItem>
                     {allLibraries.map((lib) => (
@@ -440,7 +474,7 @@ export default function ChatWindow() {
                             variant="caption"
                             sx={{ ml: 1, flexShrink: 0 }}
                           >
-                            ({getDocumentCount(lib.id)}个文件)
+                            ({getDocumentCount(lib.id)} files)
                           </Typography>
                         </Box>
                       </MenuItem>
@@ -448,18 +482,8 @@ export default function ChatWindow() {
                   </Menu>
                 </FormControl>
               </Box>
-
-              <Typography
-                variant="body2"
-                sx={{
-                  color: "text.secondary",
-                  ml: 1,
-                  mt: -1,
-                }}
-              >
-                按下 Enter 发送，Shift + Enter 换行
-              </Typography>
             </Box>
+            </Paper>
           </Box>
         </CenteredBox>
       ) : (
@@ -479,7 +503,7 @@ export default function ChatWindow() {
               mb: 2,
               px: 2,
               "& > *": {
-                maxWidth: "800px",
+                maxWidth: "850px",
                 mx: "auto",
                 my: 2,
               },
@@ -502,18 +526,18 @@ export default function ChatWindow() {
               position: "sticky",
               bottom: 0,
               borderRadius: 7,
-              p: 2,
+              p: 1.5,
               bgcolor: "background.paper",
               boxShadow: "0 3px 10px rgba(0, 0, 0, 0.08)",
               mx: "auto",
               mb: 2,
               width: "100%",
-              maxWidth: 800,
+              maxWidth: 850,
             }}
           >
             <TextField
               fullWidth
-              placeholder="输入消息..."
+              placeholder="Type a message..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
@@ -523,8 +547,27 @@ export default function ChatWindow() {
                 }
               }}
               multiline
-              maxRows={4}
-              sx={{ mb: 2 }}
+              maxRows={1}
+              sx={{ 
+                mb: 1.5,
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 3,
+                  '& fieldset': {
+                    border: 'none',
+                  },
+                  '&:hover fieldset': {
+                    border: 'none',
+                  },
+                  '&.Mui-focused fieldset': {
+                    border: 'none',
+                  }
+                },
+                '& .MuiInputBase-inputMultiline': {
+                  py: 0.7,
+                  px: 1.5,
+                  lineHeight: 1.3
+                }
+              }}
               disabled={isLoading}
             />
 
@@ -544,8 +587,8 @@ export default function ChatWindow() {
                     <Box
                       component="span"
                       sx={{
-                        width: 20,
-                        height: 20,
+                        width: 18,
+                        height: 18,
                         borderRadius: "50%",
                         bgcolor: "primary.light",
                         display: "flex",
@@ -553,18 +596,20 @@ export default function ChatWindow() {
                         justifyContent: "center",
                       }}
                     >
-                      <span style={{ color: "white", fontSize: "14px" }}>
+                      <span style={{ color: "white", fontSize: "11px" }}>
                         AI
                       </span>
                     </Box>
                   }
                   sx={{
-                    borderRadius: 20,
+                    borderRadius: 3,
                     textTransform: "none",
-                    px: 2,
-                    py: 0.5,
+                    px: 1.5,
+                    py: 0.4,
+                    height: 36,
+                    fontSize: "0.85rem",
                     bgcolor: "background.default",
-                    borderColor: "divider",
+                    borderColor: "rgba(0, 0, 0, 0.1)",
                     color: "text.primary",
                     "&:hover": {
                       bgcolor: "background.default",
@@ -619,14 +664,16 @@ export default function ChatWindow() {
                   ref={knowledgeButtonRef}
                   variant="outlined"
                   onClick={() => setKnowledgeMenuOpen(true)}
-                  startIcon={<SearchIcon />}
+                  startIcon={<SearchIcon sx={{ fontSize: '1rem' }} />}
                   sx={{
-                    borderRadius: 20,
+                    borderRadius: 3,
                     textTransform: "none",
-                    px: 2,
-                    py: 0.5,
+                    px: 1.5,
+                    py: 0.4,
+                    height: 36,
+                    fontSize: "0.85rem",
                     bgcolor: "background.default",
-                    borderColor: "divider",
+                    borderColor: "rgba(0, 0, 0, 0.1)",
                     color: "text.primary",
                     maxWidth: 150,
                     "&:hover": {
@@ -670,7 +717,7 @@ export default function ChatWindow() {
                         size="small"
                         sx={{ p: 0.5, mr: 1 }}
                       />
-                      不使用知识库
+                      No Knowledge Base
                     </Box>
                   </MenuItem>
                   {allLibraries.map((lib) => (
@@ -714,7 +761,7 @@ export default function ChatWindow() {
                           variant="caption"
                           sx={{ ml: 1, flexShrink: 0 }}
                         >
-                          ({getDocumentCount(lib.id)}个文档)
+                          ({getDocumentCount(lib.id)} files)
                         </Typography>
                       </Box>
                     </MenuItem>
@@ -728,7 +775,7 @@ export default function ChatWindow() {
                       onClick={() => setKnowledgeMenuOpen(false)}
                       sx={{ mt: 1 }}
                     >
-                      确认
+                      Confirm
                     </Button>
                   </Box>
                 </Menu>
@@ -745,11 +792,13 @@ export default function ChatWindow() {
                   }}
                   sx={{
                     color: "text.secondary",
-                    p: 1,
+                    p: 0.7,
+                    width: 32,
+                    height: 32,
                     "&:hover": { color: "primary.main" },
                   }}
                 >
-                  <AttachFileIcon />
+                  <AttachFileIcon fontSize="small" />
                 </IconButton>
 
                 <IconButton
@@ -758,7 +807,9 @@ export default function ChatWindow() {
                   sx={{
                     bgcolor: "background.default",
                     color: input.trim() ? "primary.main" : "text.disabled",
-                    p: 1,
+                    p: 0.7,
+                    width: 32,
+                    height: 32,
                     borderRadius: "50%",
                     "&:hover": {
                       bgcolor: "background.default",
@@ -766,7 +817,7 @@ export default function ChatWindow() {
                     },
                   }}
                 >
-                  <ArrowUpwardIcon />
+                  <ArrowUpwardIcon fontSize="small" />
                 </IconButton>
               </Box>
             </Box>
@@ -794,7 +845,7 @@ export default function ChatWindow() {
                 }}
               >
                 <Typography variant="h6" gutterBottom>
-                  上传文件
+                  Upload Files
                 </Typography>
                 <Box
                   sx={{
@@ -829,7 +880,7 @@ export default function ChatWindow() {
               borderBottom: '1px solid',
               borderColor: 'divider'
             }}>
-              <Typography variant="h6">参考来源</Typography>
+              <Typography variant="h6">Sources</Typography>
               <IconButton onClick={() => setSourcesOpen(false)}>
                 <CloseIcon />
               </IconButton>

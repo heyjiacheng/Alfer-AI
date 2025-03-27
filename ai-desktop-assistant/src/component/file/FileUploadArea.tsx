@@ -27,7 +27,7 @@ export default function FileUploadArea({ onClose }: Readonly<FileUploadAreaProps
       rejectedFiles.forEach(({ file, errors }) => {
         errors.forEach(error => {
           if (error.code === 'file-too-large') {
-            alert(`文件 ${file.name} 过大: ${error.message}`);
+            alert(`File ${file.name} is too large: ${error.message}`);
           }
         });
       });
@@ -36,7 +36,7 @@ export default function FileUploadArea({ onClose }: Readonly<FileUploadAreaProps
       if (file.size > 30 * 1024 * 1024) {
         return {
           code: 'file-too-large',
-          message: `文件超过30MB限制 (当前: ${(file.size/1024/1024).toFixed(1)}MB)`
+          message: `File exceeds 30MB limit (current: ${(file.size/1024/1024).toFixed(1)}MB)`
         } satisfies FileError;
       }
       
@@ -46,14 +46,14 @@ export default function FileUploadArea({ onClose }: Readonly<FileUploadAreaProps
       if (invalidCharacters) {
         return {
           code: 'invalid-filename',
-          message: '文件名包含非法字符'
+          message: 'File name contains invalid characters'
         } satisfies FileError;
       }
       
       if (isHiddenFile) {
         return {
           code: 'hidden-file',
-          message: '不支持隐藏文件'
+          message: 'Hidden files are not supported'
         } satisfies FileError;
       }
 
@@ -99,12 +99,12 @@ export default function FileUploadArea({ onClose }: Readonly<FileUploadAreaProps
         <input {...getInputProps()} />
         <InsertDriveFile fontSize="large" color="action" />
         <Typography variant="body2" color="textSecondary">
-          {isDragActive ? '释放文件以上传' : '拖放文件至此或点击上传'}
+          {isDragActive ? 'Drop files to upload' : 'Drag and drop files here or click to upload'}
         </Typography>
       </Box>
 
       <Typography variant="caption" sx={{ mt: 1, display: 'block' }}>
-        支持格式：PDF（最大30MB）, Word, 文本, 图片
+        Supported formats: PDF (max 30MB), Word, Text, Images
       </Typography>
 
       {files.length > 0 && (
@@ -116,7 +116,7 @@ export default function FileUploadArea({ onClose }: Readonly<FileUploadAreaProps
         }}>
           <InsertDriveFile fontSize="small" color="inherit" />
           <Typography variant="body2" sx={{ ml: 1 }}>
-            {files.length}个文件已准备就绪
+            {files.length} file(s) ready
           </Typography>
         </Box>
       )}
