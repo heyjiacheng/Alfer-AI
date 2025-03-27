@@ -28,9 +28,6 @@ dist-ssr
 
 /target/**
 
-# 数据库文件
-*.db
-
 # Python相关
 __pycache__/
 *.py[cod]
