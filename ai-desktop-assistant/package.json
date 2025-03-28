@@ -32,6 +32,7 @@
     "react-dropzone": "^14.3.0",
     "react-flow-renderer": "^10.3.17",
     "react-konva": "18.2.8",
+    "react-pdf": "^9.2.1",
     "react-router-dom": "^7.1.5",
     "react-window": "^1.8.11",
     "reactflow": "^11.11.4"

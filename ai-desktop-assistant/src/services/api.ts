@@ -1,11 +1,10 @@
-import { fetch } from '@tauri-apps/plugin-http';
 // API基础配置
 const API_BASE_URL = "http://localhost:8080";
 
-// 通用错误处理函数
+// Error handling function
 const handleApiError = (error: any) => {
-  console.error("API Error:", error);
-  throw error;
+  console.error('API Error:', error);
+  return { error: error.message || '未知错误' };
 };
 
 // 知识库API
@@ -131,12 +130,38 @@ export const documentApi = {
   // 下载文档
   download: async (id: string) => {
     try {
+      // First check if the document exists
+      const checkResponse = await fetch(`${API_BASE_URL}/documents/${id}`);
+      if (!checkResponse.ok) {
+        if (checkResponse.status === 404) {
+          throw new Error(`Document ID ${id} not found`);
+        }
+        throw new Error(`HTTP error ${checkResponse.status}`);
+      }
+
+      // Then attempt to download
       const response = await fetch(`${API_BASE_URL}/documents/${id}/download`);
-      if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error(`Download file for document ID ${id} not found`);
+        }
+        throw new Error(`HTTP error ${response.status}`);
+      }
       return response.blob();
     } catch (error) {
+      console.error(`文档下载失败 (ID: ${id}):`, error);
       return handleApiError(error);
     }
+  },
+
+  // Get download URL for a document
+  getDownloadUrl: (id: string) => {
+    // Validate ID format
+    if (!id || isNaN(Number(id))) {
+      console.warn(`Invalid document ID format: ${id}`);
+      return null;
+    }
+    return `${API_BASE_URL}/documents/${id}/download`;
   },
 
   // 删除文档

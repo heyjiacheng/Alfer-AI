@@ -12,7 +12,7 @@ from get_vector_db import get_vector_db
 from db_utils import get_db_connection
 
 # 使用环境变量配置
-LLM_MODEL = os.getenv('LLM_MODEL', 'mistral')
+LLM_MODEL = os.getenv('LLM_MODEL', 'deepseek-r1:1.5B')
 DB_PATH = os.getenv('DB_PATH', './documents.db')
 
 def get_prompt() -> tuple:
@@ -34,15 +34,15 @@ def get_prompt() -> tuple:
     )
 
     # 回答提示模板 - 使用英文提示并确保不输出内部思考过程
-    answer_prompt = ChatPromptTemplate.from_template("""Answer the question based on the context below.
-    Do NOT include any thinking process tags like <think> or similar. Provide a direct, concise answer.
+    answer_prompt = ChatPromptTemplate.from_template("""You are an AI assistant from a sweden company named Alfer-AI. Your task is to answer the question based on the context below.
+                                                      Provide a direct, concise answer.
     
     Context:
     {context}
     
     Question: {question}
     
-    Please provide a clear, professional answer in the user's original language:
+    Please provide a clear, professional answer with the language of the question:
     """)
 
     return query_prompt, answer_prompt
@@ -151,6 +151,8 @@ def format_sources(retrieved_docs: List[Document], query_embedding=None, doc_emb
     # 按相关度分数排序 (如果有)
     if sources and sources[0].get("relevance_score") is not None:
         sources.sort(key=lambda x: x.get("relevance_score", 0), reverse=True)
+        # Filter out sources with relevance score below 70
+        sources = [s for s in sources if s.get("relevance_score", 0) >= 70]
     
     return sources
 
@@ -350,8 +352,60 @@ def perform_query(input_query: str, kb_id: Optional[int] = None) -> Optional[Dic
         # 只使用前4个最相关的文档
         top_docs = reranked_docs[:4]
         
-        # 格式化文档内容作为上下文
-        context = "\n\n".join([doc.page_content for doc in top_docs])
+        # 获取并格式化源信息 (包含相关度分数)
+        try:
+            # 尝试获取嵌入向量以计算相关度
+            from langchain_community.embeddings import OllamaEmbeddings
+            embedding_model = OllamaEmbeddings(model=embedding_model_name)
+            query_embedding = embedding_model.embed_query(input_query)
+            doc_embeddings = [embedding_model.embed_query(doc.page_content) for doc in top_docs]
+            sources = format_sources(top_docs, query_embedding, doc_embeddings)
+            
+            # 过滤掉相关度分数低于70的文档
+            relevant_sources = [s for s in sources if s.get("relevance_score", 0) >= 70]
+        except Exception as embed_error:
+            print(f"计算相关度分数时出错: {str(embed_error)}")
+            # 继续而不计算相关度分数
+            sources = format_sources(top_docs)
+            relevant_sources = sources
+        
+        # 如果没有高相关度文档，直接使用AI回答问题
+        if not relevant_sources:
+            print("没有找到高相关度文档，使用AI直接回答问题")
+            try:
+                direct_prompt = ChatPromptTemplate.from_template("""You are an AI assistant from a sweden company named Alfer-AI. 
+                Your task is to answer the question based on your knowledge.
+                If you don't know the answer, just say you don't have enough information.
+                
+                Question: {question}
+                
+                Please provide a clear, professional answer with the language of the question:
+                """)
+                
+                formatted_prompt = direct_prompt.format(question=input_query)
+                raw_answer = llm.invoke(formatted_prompt).content
+                clean_answer = clean_llm_response(raw_answer)
+                
+                response = {
+                    "answer": clean_answer,
+                    "sources": sources,  # Include all sources even if they're low relevance
+                    "query": {
+                        "original": input_query,
+                        "kb_id": kb_id
+                    },
+                    "note": "No highly relevant information found in the knowledge base. This answer is based on the AI's general knowledge."
+                }
+                
+                return response
+            except Exception as llm_error:
+                print(f"生成直接回答时出错: {str(llm_error)}")
+                return {
+                    "error": "无法生成回答",
+                    "detail": str(llm_error)
+                }
+        
+        # 使用高相关度文档作为上下文
+        context = "\n\n".join([s["content"] for s in relevant_sources])
         
         # 生成回答
         try:
@@ -367,23 +421,10 @@ def perform_query(input_query: str, kb_id: Optional[int] = None) -> Optional[Dic
         # 清理响应
         clean_answer = clean_llm_response(raw_answer)
         
-        # 获取并格式化源信息 (包含相关度分数)
-        try:
-            # 尝试获取嵌入向量以计算相关度
-            from langchain_community.embeddings import OllamaEmbeddings
-            embedding_model = OllamaEmbeddings(model=embedding_model_name)
-            query_embedding = embedding_model.embed_query(input_query)
-            doc_embeddings = [embedding_model.embed_query(doc.page_content) for doc in top_docs]
-            sources = format_sources(top_docs, query_embedding, doc_embeddings)
-        except Exception as embed_error:
-            print(f"计算相关度分数时出错: {str(embed_error)}")
-            # 继续而不计算相关度分数
-            sources = format_sources(top_docs)
-        
         # 组装最终响应
         response = {
             "answer": clean_answer,
-            "sources": sources,
+            "sources": sources,  # Include all sources even if they're low relevance
             "query": {
                 "original": input_query,
                 "kb_id": kb_id
