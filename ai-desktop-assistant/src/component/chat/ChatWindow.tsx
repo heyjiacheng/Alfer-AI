@@ -393,21 +393,41 @@ export default function ChatWindow() {
                     }
                   }
                 }}>
-                  <InputLabel sx={{ fontSize: '0.85rem' }}>Knowledge Base</InputLabel>
-                  <Select
+                  <Button
                     ref={homeKnowledgeButtonRef}
-                    value=""
+                    variant="outlined"
                     onClick={() => setHomeKnowledgeMenuOpen(true)}
-                    label="Knowledge Base"
-                    sx={{
-                      "& .MuiSelect-select": { py: 0.7, fontSize: "0.85rem" },
+                    startIcon={<SearchIcon sx={{ fontSize: '1rem' }} />}
+                    size="small"
+                    sx={{ 
+                      height: 36,
+                      borderRadius: 3,
+                      px: 1.5,
+                      py: 0.4,
+                      borderColor: 'rgba(0, 0, 0, 0.1)',
+                      textTransform: 'none',
+                      fontSize: '0.85rem',
+                      fontWeight: 'normal',
+                      justifyContent: 'space-between',
+                      minWidth: 150,
+                      bgcolor: "background.default",
+                      color: "text.primary",
+                      '&:hover': {
+                        borderColor: 'primary.main',
+                        bgcolor: 'background.default',
+                      },
+                      "& .MuiButton-startIcon": {
+                        flexShrink: 0,
+                      }
                     }}
-                    renderValue={() => getSelectedLibrariesDisplay()}
                   >
-                    <MenuItem value="" disabled>
-                      <em>Select Knowledge Base</em>
-                    </MenuItem>
-                  </Select>
+                    <Typography
+                      noWrap
+                      sx={{ overflow: "hidden", textOverflow: "ellipsis" }}
+                    >
+                      {getSelectedLibrariesDisplay()}
+                    </Typography>
+                  </Button>
                   <Menu
                     anchorEl={homeKnowledgeButtonRef.current}
                     open={homeKnowledgeMenuOpen}
@@ -442,7 +462,6 @@ export default function ChatWindow() {
                         onClick={(e) => {
                           e.stopPropagation();
                           toggleLibrarySelection(lib.id);
-                          setHomeKnowledgeMenuOpen(false);
                         }}
                         sx={{ maxWidth: 250 }}
                       >
@@ -479,6 +498,18 @@ export default function ChatWindow() {
                         </Box>
                       </MenuItem>
                     ))}
+                    <Box
+                      sx={{ p: 1, display: "flex", justifyContent: "flex-end" }}
+                    >
+                      <Button
+                        variant="contained"
+                        size="small"
+                        onClick={() => setHomeKnowledgeMenuOpen(false)}
+                        sx={{ mt: 1 }}
+                      >
+                        Confirm
+                      </Button>
+                    </Box>
                   </Menu>
                 </FormControl>
               </Box>
