@@ -35,6 +35,7 @@ pnpm install
 ### start backend (in separate terminal)
 ```bash
 cd backend
+conda activate rag
 python app.py
 ```
 ### start frontend (in separate terminal)
