@@ -89,9 +89,25 @@ def load_and_split_data(file_path):
                     for i, page in enumerate(pdf.pages):
                         text = page.extract_text() or ""
                         if text.strip():
+                            # Get page label if possible (metadata about actual page number)
+                            actual_page = None
+                            try:
+                                if hasattr(page, 'page_number') and page.page_number is not None:
+                                    actual_page = str(page.page_number)
+                                elif hasattr(pdf, '_get_page_label'):
+                                    actual_page = pdf._get_page_label(i)
+                            except:
+                                pass
+                                
                             data.append(Document(
                                 page_content=text,
-                                metadata={"source": file_path, "page": i+1}
+                                metadata={
+                                    "source": file_path, 
+                                    "page": i+1,  # 1-based index
+                                    "page_index": i,  # 0-based index
+                                    "page_label": actual_page,  # Actual page label if available
+                                    "total_pages": len(pdf.pages)
+                                }
                             ))
                 if not data:
                     raise ValueError("No content extracted with pdfplumber")
@@ -116,9 +132,25 @@ def load_and_split_data(file_path):
                         page = reader.pages[i]
                         text = page.extract_text() or ""
                         if text.strip():
+                            # Extract actual page label if available to distinguish from index
+                            actual_page = None
+                            try:
+                                # Try to get page labels from PDF if available
+                                if hasattr(reader, '_get_page_label'):
+                                    actual_page = reader._get_page_label(i)
+                                elif hasattr(page, 'get_label'):
+                                    actual_page = page.get_label()
+                            except:
+                                pass
+                                
                             data.append(Document(
                                 page_content=text,
-                                metadata={"source": file_path, "page": i+1}
+                                metadata={
+                                    "source": file_path, 
+                                    "page": i+1,  # 1-based page index
+                                    "page_index": i,  # Store original 0-based index
+                                    "page_label": actual_page  # Store page label if available
+                                }
                             ))
                     except Exception as page_error:
                         print(f"Error extracting page {i}: {str(page_error)}")

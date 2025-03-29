@@ -116,6 +116,10 @@ def format_sources(retrieved_docs: List[Document], query_embedding=None, doc_emb
     """
     sources = []
     
+    # 获取数据库连接
+    conn = get_db_connection(DB_PATH)
+    cursor = conn.cursor()
+    
     for i, doc in enumerate(retrieved_docs):
         # 提取文档内容
         content = doc.page_content
@@ -123,30 +127,85 @@ def format_sources(retrieved_docs: List[Document], query_embedding=None, doc_emb
         # 获取文档元数据
         metadata = doc.metadata
         source_path = metadata.get('source') if metadata else None
-        document_name = get_document_metadata(source_path) or "未知文档"
+        
+        # 检查文档是否存在于数据库中
+        if source_path:
+            source_file = os.path.basename(source_path)
+            cursor.execute(
+                "SELECT id, original_filename FROM documents WHERE stored_filename = ?", 
+                (source_file,)
+            )
+            result = cursor.fetchone()
+            if not result:
+                # 跳过不存在的文档
+                print(f"跳过不存在的文档: {source_path}")
+                continue
+                
+            document_id = result['id']
+            document_name = result['original_filename']
+        else:
+            document_name = "未知文档"
+            # 如果没有源路径，则无法确定文档ID
+            document_id = None
         
         # 计算相关度分数 (如果提供了嵌入向量)
         relevance_score = None
         if query_embedding is not None and doc_embeddings is not None and i < len(doc_embeddings):
             relevance_score = calculate_relevance_score(query_embedding, doc_embeddings[i])
         
+        # 尝试从元数据中提取页码信息，确保它是数字类型
+        page_number = None
+        page_label = None
+        
+        # 首先尝试获取页面标签，这通常是PDF中显示的实际页码
+        if metadata and 'page_label' in metadata:
+            try:
+                page_label = metadata['page_label']
+                # 如果页面标签是数字，转换为整数用于跳转
+                if isinstance(page_label, str) and page_label.isdigit():
+                    page_number = int(page_label)
+            except (ValueError, TypeError):
+                pass
+        
+        # 如果没有标签或无法解析，回退到索引页码
+        if page_number is None and metadata and 'page' in metadata:
+            try:
+                # 如果是字符串，尝试转换为整数
+                if isinstance(metadata['page'], str):
+                    page_number = int(metadata['page'].strip())
+                else:
+                    page_number = int(metadata['page'])
+                
+                # 确保页码有效 (大于0)
+                if page_number < 1:
+                    page_number = 1
+            except (ValueError, TypeError):
+                print(f"无法解析页码: {metadata['page']}，使用默认值1")
+                page_number = 1
+        
         # 创建源信息对象
         source_info = {
             "document_name": document_name,
-            "content": content,
-            "content_preview": content[:100] + "..." if len(content) > 100 else content,
-            "relevance_score": relevance_score
+            "document_id": document_id,  # 添加文档ID
+            "content": content,           # 保留完整内容用于高亮
+            "content_preview": content[:400] + "..." if len(content) > 400 else content,  # 增加预览长度为400个字符
+            "relevance_score": relevance_score,
+            "page": page_number,  # 直接包含处理后的页码
+            "page_label": page_label  # 包含原始页面标签
         }
         
         # 如果有其他元数据，也可以添加
         if metadata:
             # 过滤掉不需要的大型元数据 (如嵌入向量)
             filtered_metadata = {k: v for k, v in metadata.items() 
-                                if k not in ['source'] and not isinstance(v, (list, np.ndarray)) 
-                                or (isinstance(v, list) and len(v) < 20)}
+                               if k not in ['source'] and not isinstance(v, (list, np.ndarray)) 
+                               or (isinstance(v, list) and len(v) < 20)}
             source_info["metadata"] = filtered_metadata
         
         sources.append(source_info)
+    
+    # 关闭数据库连接
+    conn.close()
     
     # 按相关度分数排序 (如果有)
     if sources and sources[0].get("relevance_score") is not None:
