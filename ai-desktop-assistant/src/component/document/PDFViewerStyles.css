@@ -1,0 +1,42 @@
+/* 简化的自定义样式用于PDF查看器 */
+.rpv-core__viewer {
+  border-radius: 4px;
+}
+
+/* 自定义工具栏样式 */
+.rpv-toolbar {
+  padding: 4px !important;
+  background-color: #fafafa;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.rpv-toolbar__item {
+  margin: 0 2px !important;
+}
+
+/* 页面导航样式 */
+.rpv-page-navigation__current {
+  border-radius: 4px !important;
+  border: 1px solid #e0e0e0 !important;
+}
+
+/* 缩放设置 - 确保100%缩放 */
+.rpv-zoom__popover-target-scale {
+  min-width: 80px !important;
+}
+
+/* 自定义缩放按钮 */
+.rpv-zoom__popover-target-scale-actual {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+/* PDF容器样式 */
+.source-text-sidebar {
+  transition: all 0.3s ease-in-out;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* 文本选择样式 */
+::selection {
+  background-color: rgba(25, 118, 210, 0.2) !important;
+} 
