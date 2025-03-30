@@ -51,8 +51,10 @@ export default React.memo(function MessageBubble({ message, isUser, onViewSource
 
   // 根据主题决定颜色
   const isDarkMode = theme.palette.mode === 'dark';
-  const userBubbleBgColor = isDarkMode ? 'rgba(80, 80, 80, 0.9)' : 'rgba(240, 240, 240, 0.9)';
+  const userBubbleBgColor = isDarkMode ? 'rgba(75, 75, 75, 0.95)' : 'rgba(230, 230, 230, 0.95)';
   const dividerColor = isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
+  const sourceBtnBgColor = isDarkMode ? 'rgba(70, 70, 70, 0.9)' : 'rgba(220, 220, 220, 0.9)';
+  const sourceBtnTextColor = isDarkMode ? 'rgba(255, 255, 255, 0.9)' : 'rgba(60, 60, 60, 0.9)';
   
   return (
     <Box sx={{
@@ -93,7 +95,7 @@ export default React.memo(function MessageBubble({ message, isUser, onViewSource
                 maxWidth: '80%',
                 bgcolor: userBubbleBgColor, // 根据主题调整背景色
                 color: 'text.primary',
-                borderRadius: 2,
+                borderRadius: 3.5, // 更圆润的边角
                 p: 2,
                 boxShadow: isDarkMode ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 2px rgba(0,0,0,0.1)',
                 wordWrap: 'break-word',
@@ -185,11 +187,15 @@ export default React.memo(function MessageBubble({ message, isUser, onViewSource
                   startIcon={<SourceIcon />} 
                   size="small" 
                   variant="contained"
-                  color="info" 
+                  color="inherit" 
                   onClick={handleViewSources}
                   sx={{
+                    bgcolor: sourceBtnBgColor,
+                    color: sourceBtnTextColor,
+                    borderRadius: 2.5, // 更圆润的边角
                     boxShadow: isDarkMode ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 4px rgba(0,0,0,0.1)',
                     '&:hover': {
+                      bgcolor: isDarkMode ? 'rgba(80, 80, 80, 0.95)' : 'rgba(210, 210, 210, 0.95)',
                       boxShadow: isDarkMode ? '0 4px 12px rgba(0,0,0,0.4)' : '0 4px 8px rgba(0,0,0,0.15)',
                     }
                   }}

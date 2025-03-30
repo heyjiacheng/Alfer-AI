@@ -30,6 +30,7 @@ import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import CloseIcon from "@mui/icons-material/Close";
 import { Checkbox } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 
 const CenteredBox = ({ children }: Readonly<{ children: React.ReactNode }>) => (
   <Box
@@ -72,6 +73,7 @@ export default function ChatWindow() {
   >({});
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const [currentSources, setCurrentSources] = useState<ChatMessage['sources']>([]);
+  const theme = useTheme();
 
   const allLibraries = useMemo(() => libraries, [libraries]);
 
@@ -330,7 +332,7 @@ export default function ChatWindow() {
                     </IconButton>
                   ),
                   sx: {
-                    bgcolor: "background.paper",
+                    bgcolor: "transparent",
                   },
                 }}
               />
@@ -346,11 +348,21 @@ export default function ChatWindow() {
               <Box sx={{ display: "flex", gap: 1.5, flexGrow: 1 }}>
                 <FormControl size="small" sx={{ 
                   minWidth: 115,
+                  '& .MuiInputLabel-root': {
+                    backgroundColor: theme => theme.palette.background.paper,
+                    padding: '0 4px',
+                    transform: 'translate(14px, -6px) scale(0.75)',
+                    color: 'primary.main',
+                    '&.Mui-focused, &.MuiFormLabel-filled': {
+                      transform: 'translate(14px, -6px) scale(0.75)',
+                      color: 'primary.main',
+                    }
+                  },
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 3,
                     height: 36,
                     '& fieldset': {
-                      borderColor: 'rgba(0, 0, 0, 0.1)',
+                      borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
                     },
                     '&:hover fieldset': {
                       borderColor: 'primary.main',
@@ -369,6 +381,7 @@ export default function ChatWindow() {
                     label="AI Model"
                     sx={{
                       "& .MuiSelect-select": { py: 0.7, fontSize: "0.85rem" },
+                      bgcolor: 'background.paper',
                     }}
                   >
                     <MenuItem value="deepseek-r1">DeepSeek R1</MenuItem>
@@ -382,14 +395,14 @@ export default function ChatWindow() {
                   minWidth: 150,
                   position: 'relative',
                   '& .MuiInputLabel-root': {
-                    backgroundColor: 'background.paper',
+                    backgroundColor: theme => theme.palette.background.paper,
                     padding: '0 4px',
                     transform: selectedLibraries.length > 0 || homeKnowledgeMenuOpen 
                       ? 'translate(14px, -6px) scale(0.75)'
                       : 'translate(14px, 8px) scale(1)',
                     color: (selectedLibraries.length > 0 || homeKnowledgeMenuOpen) 
                       ? 'primary.main' 
-                      : 'rgba(0, 0, 0, 0.6)',
+                      : theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
                     '&.Mui-focused, &.MuiFormLabel-filled': {
                       transform: 'translate(14px, -6px) scale(0.75)',
                       color: 'primary.main',
@@ -399,7 +412,7 @@ export default function ChatWindow() {
                     borderRadius: 3,
                     height: 36,
                     '& fieldset': {
-                      borderColor: 'rgba(0, 0, 0, 0.1)',
+                      borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
                     },
                     '&:hover fieldset': {
                       borderColor: 'primary.main',
@@ -423,7 +436,7 @@ export default function ChatWindow() {
                     ref={homeKnowledgeButtonRef}
                     variant="outlined"
                     onClick={() => setHomeKnowledgeMenuOpen(true)}
-                    endIcon={<ArrowDropDownIcon />}
+                    endIcon={<ArrowDropDownIcon sx={{ color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }} />}
                     size="small"
                     aria-labelledby="home-knowledge-base-label"
                     sx={{ 
@@ -431,7 +444,7 @@ export default function ChatWindow() {
                       borderRadius: 3,
                       px: 1.5,
                       py: 0.4,
-                      borderColor: 'rgba(0, 0, 0, 0.1)',
+                      borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
                       textTransform: 'none',
                       fontSize: '0.85rem',
                       fontWeight: 'normal',
@@ -447,7 +460,7 @@ export default function ChatWindow() {
                       "& .MuiButton-endIcon": {
                         flexShrink: 0,
                         marginLeft: 'auto',
-                        color: 'action.active'
+                        color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)'
                       }
                     }}
                   >
@@ -646,33 +659,21 @@ export default function ChatWindow() {
             <Box
               sx={{
                 display: "flex",
-                justifyContent: "space-between",
+                justifyContent: "flex-end",
                 alignItems: "center",
               }}
             >
-              <Box sx={{ display: "flex", gap: 1 }}>
+              <Box sx={{ 
+                display: "flex", 
+                gap: 1,
+                ml: 1.5,
+                mr: 'auto',
+                mt: -0.5,
+              }}>
                 <Button
                   ref={modelButtonRef}
                   variant="outlined"
                   onClick={() => setModelMenuOpen(true)}
-                  startIcon={
-                    <Box
-                      component="span"
-                      sx={{
-                        width: 16,
-                        height: 16,
-                        borderRadius: "50%",
-                        bgcolor: "primary.light",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <span style={{ color: "white", fontSize: "10px" }}>
-                        AI
-                      </span>
-                    </Box>
-                  }
                   sx={{
                     borderRadius: 3,
                     textTransform: "none",
@@ -683,6 +684,7 @@ export default function ChatWindow() {
                     bgcolor: "background.default",
                     borderColor: "rgba(0, 0, 0, 0.1)",
                     color: "text.primary",
+                    minWidth: 90,
                     "&:hover": {
                       bgcolor: "background.default",
                       borderColor: "primary.main",
@@ -736,7 +738,6 @@ export default function ChatWindow() {
                   ref={knowledgeButtonRef}
                   variant="outlined"
                   onClick={() => setKnowledgeMenuOpen(true)}
-                  startIcon={<SearchIcon sx={{ fontSize: '0.9rem' }} />}
                   sx={{
                     borderRadius: 3,
                     textTransform: "none",
@@ -748,21 +749,21 @@ export default function ChatWindow() {
                     borderColor: "rgba(0, 0, 0, 0.1)",
                     color: "text.primary",
                     maxWidth: 150,
+                    minWidth: 120,
                     "&:hover": {
                       bgcolor: "background.default",
                       borderColor: "primary.main",
-                    },
-                    "& .MuiButton-startIcon": {
-                      flexShrink: 0,
-                    },
-                    "& .MuiButton-endIcon": {
-                      flexShrink: 0,
                     },
                   }}
                 >
                   <Typography
                     noWrap
-                    sx={{ overflow: "hidden", textOverflow: "ellipsis" }}
+                    sx={{ 
+                      overflow: "hidden", 
+                      textOverflow: "ellipsis",
+                      fontSize: "0.8rem",
+                      lineHeight: 1,
+                    }}
                   >
                     {getSelectedLibrariesDisplay()}
                   </Typography>
@@ -864,9 +865,9 @@ export default function ChatWindow() {
                   }}
                   sx={{
                     color: "text.secondary",
-                    p: 0.7,
-                    width: 32,
-                    height: 32,
+                    p: 0.5,
+                    width: 28,
+                    height: 28,
                     "&:hover": { color: "primary.main" },
                   }}
                 >
