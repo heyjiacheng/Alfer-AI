@@ -355,7 +355,10 @@ export default function ChatWindow() {
                     color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
                     '&.Mui-focused': {
                       color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
-                    }
+                    },
+                    borderRadius: 8,
+                    paddingLeft: '6px',
+                    paddingRight: '6px'
                   },
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 3,
@@ -371,54 +374,120 @@ export default function ChatWindow() {
                     }
                   }
                 }}>
-                  <InputLabel sx={{ 
-                    fontSize: '0.85rem',
-                    pointerEvents: 'none',
-                  }}>AI Model</InputLabel>
-                  <Select
-                    value={selectedLibrary}
-                    onChange={(e) =>
-                      setSelectedLibrary(e.target.value as string)
-                    }
-                    label="AI Model"
-                    sx={{
-                      "& .MuiSelect-select": { 
-                        py: 0.7, 
-                        fontSize: "0.85rem",
-                        color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)'
-                      },
+                  <InputLabel 
+                    id="home-ai-model-label" 
+                    sx={{ 
+                      fontSize: '0.85rem',
+                      pointerEvents: 'none',
+                      zIndex: 1,
+                      borderRadius: 8
+                    }}
+                  >
+                    AI Model
+                  </InputLabel>
+                  <Button
+                    ref={modelButtonRef}
+                    variant="outlined"
+                    onClick={() => setModelMenuOpen(true)}
+                    endIcon={<ArrowDropDownIcon sx={{ color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }} />}
+                    size="small"
+                    aria-labelledby="home-ai-model-label"
+                    sx={{ 
+                      height: 36,
+                      borderRadius: 3,
+                      px: 1.5,
+                      py: 0.4,
+                      borderColor: modelMenuOpen 
+                        ? 'primary.main'
+                        : (theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'),
+                      textTransform: 'none',
+                      fontSize: '0.85rem',
+                      fontWeight: 'normal',
+                      justifyContent: 'space-between',
+                      minWidth: 115,
                       bgcolor: 'background.paper',
-                      '& .Mui-focused': {
-                        color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+                      color: "text.primary",
+                      display: 'flex',
+                      '&:hover': {
+                        borderColor: 'primary.main',
+                        bgcolor: 'background.paper',
                       },
-                      '& .MuiOutlinedInput-notchedOutline': {
-                        borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
-                      },
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)',
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.3)',
+                      "& .MuiButton-endIcon": {
+                        flexShrink: 0,
+                        marginLeft: 'auto',
+                        color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)'
                       }
                     }}
-                    MenuProps={{
-                      sx: {
-                        '& .MuiMenuItem-root': {
-                          '&.Mui-selected': {
-                            backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
-                            '&:hover': {
-                              backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)',
-                            }
-                          }
+                  >
+                    <Typography
+                      noWrap
+                      sx={{ 
+                        overflow: "hidden", 
+                        textOverflow: "ellipsis",
+                        fontSize: "0.85rem",
+                        py: 0.7,
+                        flex: '1',
+                        textAlign: 'left',
+                        pl: 0.5,
+                        color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+                      }}
+                    >
+                      {selectedLibrary === "deepseek-r1" ? "DeepSeek R1" : selectedLibrary}
+                    </Typography>
+                  </Button>
+                  <Menu
+                    anchorEl={modelButtonRef.current}
+                    open={modelMenuOpen}
+                    onClose={() => setModelMenuOpen(false)}
+                    anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+                    transformOrigin={{ vertical: "top", horizontal: "left" }}
+                    sx={{ 
+                      mt: 1,
+                      '& .MuiMenuItem-root.Mui-selected': {
+                        backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
+                        '&:hover': {
+                          backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)',
                         }
                       }
                     }}
                   >
-                    <MenuItem value="deepseek-r1">DeepSeek R1</MenuItem>
-                    <MenuItem value="gpt-4">GPT-4</MenuItem>
-                    <MenuItem value="claude-2">Claude 2</MenuItem>
-                    <MenuItem value="gemini">Gemini</MenuItem>
-                  </Select>
+                    <MenuItem
+                      onClick={() => {
+                        setSelectedLibrary("deepseek-r1");
+                        setModelMenuOpen(false);
+                      }}
+                      selected={selectedLibrary === "deepseek-r1"}
+                    >
+                      DeepSeek R1
+                    </MenuItem>
+                    <MenuItem
+                      onClick={() => {
+                        setSelectedLibrary("gpt-4");
+                        setModelMenuOpen(false);
+                      }}
+                      selected={selectedLibrary === "gpt-4"}
+                    >
+                      GPT-4
+                    </MenuItem>
+                    <MenuItem
+                      onClick={() => {
+                        setSelectedLibrary("claude-2");
+                        setModelMenuOpen(false);
+                      }}
+                      selected={selectedLibrary === "claude-2"}
+                    >
+                      Claude 2
+                    </MenuItem>
+                    <MenuItem
+                      onClick={() => {
+                        setSelectedLibrary("gemini");
+                        setModelMenuOpen(false);
+                      }}
+                      selected={selectedLibrary === "gemini"}
+                    >
+                      Gemini
+                    </MenuItem>
+                  </Menu>
                 </FormControl>
 
                 <FormControl size="small" sx={{ 
@@ -434,7 +503,10 @@ export default function ChatWindow() {
                     '&.Mui-focused': {
                       transform: 'translate(14px, -6px) scale(0.75)',
                       color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
-                    }
+                    },
+                    borderRadius: 8,
+                    paddingLeft: '6px',
+                    paddingRight: '6px'
                   },
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 3,
@@ -455,7 +527,8 @@ export default function ChatWindow() {
                     sx={{ 
                       fontSize: '0.85rem',
                       pointerEvents: 'none',
-                      zIndex: 1
+                      zIndex: 1,
+                      borderRadius: 8
                     }}
                   >
                     Knowledge Base
@@ -472,7 +545,9 @@ export default function ChatWindow() {
                       borderRadius: 3,
                       px: 1.5,
                       py: 0.4,
-                      borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
+                      borderColor: homeKnowledgeMenuOpen 
+                        ? 'primary.main'
+                        : (theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'),
                       textTransform: 'none',
                       fontSize: '0.85rem',
                       fontWeight: 'normal',
@@ -719,6 +794,7 @@ export default function ChatWindow() {
                   ref={modelButtonRef}
                   variant="outlined"
                   onClick={() => setModelMenuOpen(true)}
+                  endIcon={<ArrowDropDownIcon sx={{ color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }} />}
                   sx={{
                     borderRadius: 3,
                     textTransform: "none",
@@ -727,18 +803,45 @@ export default function ChatWindow() {
                     height: 30,
                     fontSize: "0.8rem",
                     bgcolor: "background.default",
-                    borderColor: "rgba(0, 0, 0, 0.1)",
+                    borderColor: modelMenuOpen
+                      ? 'primary.main'
+                      : "rgba(0, 0, 0, 0.1)",
                     color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
                     minWidth: 90,
+                    display: 'flex',
+                    justifyContent: 'space-between',
                     "&:hover": {
                       bgcolor: "background.default",
                       borderColor: "primary.main",
                     },
+                    "&:focus": {
+                      bgcolor: "background.default",
+                      borderColor: "primary.main",
+                      boxShadow: 'none',
+                    },
+                    "& .MuiButton-endIcon": {
+                      flexShrink: 0,
+                      marginLeft: 'auto',
+                      color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)'
+                    }
                   }}
                 >
-                  {["deepseek-r1", "gpt-4", "claude-2", "gemini"].includes(selectedLibrary)
-                    ? selectedLibrary === "deepseek-r1" ? "DeepThink (R1)" : selectedLibrary
-                    : "DeepThink (R1)"}
+                  <Typography
+                    noWrap
+                    sx={{ 
+                      overflow: "hidden", 
+                      textOverflow: "ellipsis",
+                      fontSize: "0.8rem",
+                      lineHeight: 1,
+                      flex: '1',
+                      textAlign: 'left',
+                      color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)'
+                    }}
+                  >
+                    {["deepseek-r1", "gpt-4", "claude-2", "gemini"].includes(selectedLibrary)
+                      ? selectedLibrary === "deepseek-r1" ? "DeepThink (R1)" : selectedLibrary
+                      : "DeepThink (R1)"}
+                  </Typography>
                 </Button>
                 <Menu
                   anchorEl={modelButtonRef.current}
@@ -803,14 +906,16 @@ export default function ChatWindow() {
                     height: 30,
                     fontSize: "0.8rem",
                     bgcolor: "background.default",
-                    borderColor: "rgba(0, 0, 0, 0.1)",
+                    borderColor: knowledgeMenuOpen
+                      ? 'primary.main'
+                      : "rgba(0, 0, 0, 0.1)",
                     color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
                     maxWidth: 150,
                     minWidth: 120,
                     "&:hover": {
                       bgcolor: "background.default",
                       borderColor: "primary.main",
-                    },
+                    }
                   }}
                 >
                   <Typography
