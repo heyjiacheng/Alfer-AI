@@ -564,6 +564,7 @@ export default function ChatWindow() {
             flexDirection: "column",
             height: "100%",
             position: "relative",
+            backgroundColor: "background.default",
           }}
         >
           <Box
@@ -573,9 +574,9 @@ export default function ChatWindow() {
               mb: 2,
               px: 2,
               "& > *": {
-                maxWidth: "850px",
+                maxWidth: "700px",
                 mx: "auto",
-                my: 2,
+                my: 1.5,
               },
             }}
           >
@@ -596,13 +597,13 @@ export default function ChatWindow() {
               position: "sticky",
               bottom: 0,
               borderRadius: 7,
-              p: 1.5,
+              p: 1,
               bgcolor: "background.paper",
               boxShadow: "0 3px 10px rgba(0, 0, 0, 0.08)",
               mx: "auto",
               mb: 2,
               width: "100%",
-              maxWidth: 850,
+              maxWidth: 700,
             }}
           >
             <TextField
@@ -617,9 +618,9 @@ export default function ChatWindow() {
                 }
               }}
               multiline
-              maxRows={1}
+              maxRows={3}
               sx={{ 
-                mb: 1.5,
+                mb: 0.8,
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 3,
                   '& fieldset': {
@@ -633,9 +634,10 @@ export default function ChatWindow() {
                   }
                 },
                 '& .MuiInputBase-inputMultiline': {
-                  py: 0.7,
+                  py: 0.5,
                   px: 1.5,
-                  lineHeight: 1.3
+                  lineHeight: 1.4,
+                  fontSize: '0.95rem',
                 }
               }}
               disabled={isLoading}
@@ -657,8 +659,8 @@ export default function ChatWindow() {
                     <Box
                       component="span"
                       sx={{
-                        width: 18,
-                        height: 18,
+                        width: 16,
+                        height: 16,
                         borderRadius: "50%",
                         bgcolor: "primary.light",
                         display: "flex",
@@ -666,7 +668,7 @@ export default function ChatWindow() {
                         justifyContent: "center",
                       }}
                     >
-                      <span style={{ color: "white", fontSize: "11px" }}>
+                      <span style={{ color: "white", fontSize: "10px" }}>
                         AI
                       </span>
                     </Box>
@@ -674,10 +676,10 @@ export default function ChatWindow() {
                   sx={{
                     borderRadius: 3,
                     textTransform: "none",
-                    px: 1.5,
-                    py: 0.4,
-                    height: 36,
-                    fontSize: "0.85rem",
+                    px: 1.2,
+                    py: 0.2,
+                    height: 30,
+                    fontSize: "0.8rem",
                     bgcolor: "background.default",
                     borderColor: "rgba(0, 0, 0, 0.1)",
                     color: "text.primary",
@@ -734,14 +736,14 @@ export default function ChatWindow() {
                   ref={knowledgeButtonRef}
                   variant="outlined"
                   onClick={() => setKnowledgeMenuOpen(true)}
-                  startIcon={<SearchIcon sx={{ fontSize: '1rem' }} />}
+                  startIcon={<SearchIcon sx={{ fontSize: '0.9rem' }} />}
                   sx={{
                     borderRadius: 3,
                     textTransform: "none",
-                    px: 1.5,
-                    py: 0.4,
-                    height: 36,
-                    fontSize: "0.85rem",
+                    px: 1.2,
+                    py: 0.2,
+                    height: 30,
+                    fontSize: "0.8rem",
                     bgcolor: "background.default",
                     borderColor: "rgba(0, 0, 0, 0.1)",
                     color: "text.primary",
@@ -877,9 +879,9 @@ export default function ChatWindow() {
                   sx={{
                     bgcolor: "background.default",
                     color: input.trim() ? "primary.main" : "text.disabled",
-                    p: 0.7,
-                    width: 32,
-                    height: 32,
+                    p: 0.5,
+                    width: 28,
+                    height: 28,
                     borderRadius: "50%",
                     "&:hover": {
                       bgcolor: "background.default",
@@ -912,6 +914,7 @@ export default function ChatWindow() {
                   maxHeight: "60vh",
                   display: "flex",
                   flexDirection: "column",
+                  bgcolor: "background.paper",
                 }}
               >
                 <Typography variant="h6" gutterBottom>
@@ -939,6 +942,7 @@ export default function ChatWindow() {
               flexShrink: 0,
               '& .MuiDrawer-paper': {
                 width: 350,
+                bgcolor: "background.paper",
               },
             }}
           >
