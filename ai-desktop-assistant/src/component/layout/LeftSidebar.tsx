@@ -170,7 +170,13 @@ export default function LeftSidebar() {
                   }
                 }}
               >
-                New Knowledge Base
+                <Typography sx={{ 
+                  fontFamily: '"Space Mono", monospace',
+                  letterSpacing: '0.5px',
+                  fontSize: '0.85rem'
+                }}>
+                  New Knowledge Base
+                </Typography>
               </Button>
             </Box>
           </Box>
@@ -221,7 +227,13 @@ export default function LeftSidebar() {
                 }
               }}
             >
-              New Conversation
+              <Typography sx={{ 
+                fontFamily: '"Space Mono", monospace',
+                letterSpacing: '0.5px',
+                fontSize: '0.85rem'
+              }}>
+                New Conversation
+              </Typography>
             </Button>
           </Box>
 
