@@ -535,7 +535,6 @@ export default function ChatWindow() {
                         } else {
                           setSelectedLibraries([]);
                         }
-                        setSelectedLibrary("");
                         setHomeKnowledgeMenuOpen(false);
                       }}
                     >
@@ -850,7 +849,6 @@ export default function ChatWindow() {
                       } else {
                         setSelectedLibraries([]);
                       }
-                      setSelectedLibrary("");
                       setKnowledgeMenuOpen(false);
                     }}
                   >
