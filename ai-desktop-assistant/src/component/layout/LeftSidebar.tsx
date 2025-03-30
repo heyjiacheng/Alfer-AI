@@ -162,11 +162,11 @@ export default function LeftSidebar() {
                   justifyContent: 'flex-start',
                   pl: 2,
                   border: '1px solid',
-                  borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.05)',
+                  borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.25)' : 'rgba(0, 0, 0, 0.15)',
                   '&:hover': {
                     bgcolor: 'rgba(0, 0, 0, 0.15)',
                     boxShadow: 'none',
-                    borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'
+                    borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.35)' : 'rgba(0, 0, 0, 0.25)'
                   }
                 }}
               >
@@ -212,12 +212,12 @@ export default function LeftSidebar() {
                 textAlign: 'left',
                 justifyContent: 'flex-start',
                 pl: 2,
-                border: '1px solid',
-                borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.05)',
+                border: '1px solid', 
+                borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.25)' : 'rgba(0, 0, 0, 0.15)',
                 '&:hover': {
                   bgcolor: 'rgba(0, 0, 0, 0.15)',
                   boxShadow: 'none',
-                  borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'
+                  borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.35)' : 'rgba(0, 0, 0, 0.25)'
                 }
               }}
             >

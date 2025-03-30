@@ -352,10 +352,9 @@ export default function ChatWindow() {
                     backgroundColor: theme => theme.palette.background.paper,
                     padding: '0 4px',
                     transform: 'translate(14px, -6px) scale(0.75)',
-                    color: 'primary.main',
-                    '&.Mui-focused, &.MuiFormLabel-filled': {
-                      transform: 'translate(14px, -6px) scale(0.75)',
-                      color: 'primary.main',
+                    color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+                    '&.Mui-focused': {
+                      color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
                     }
                   },
                   '& .MuiOutlinedInput-root': {
@@ -372,7 +371,10 @@ export default function ChatWindow() {
                     }
                   }
                 }}>
-                  <InputLabel sx={{ fontSize: '0.85rem' }}>AI Model</InputLabel>
+                  <InputLabel sx={{ 
+                    fontSize: '0.85rem',
+                    pointerEvents: 'none',
+                  }}>AI Model</InputLabel>
                   <Select
                     value={selectedLibrary}
                     onChange={(e) =>
@@ -380,8 +382,36 @@ export default function ChatWindow() {
                     }
                     label="AI Model"
                     sx={{
-                      "& .MuiSelect-select": { py: 0.7, fontSize: "0.85rem" },
+                      "& .MuiSelect-select": { 
+                        py: 0.7, 
+                        fontSize: "0.85rem",
+                        color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)'
+                      },
                       bgcolor: 'background.paper',
+                      '& .Mui-focused': {
+                        color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+                      },
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
+                      },
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)',
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.3)',
+                      }
+                    }}
+                    MenuProps={{
+                      sx: {
+                        '& .MuiMenuItem-root': {
+                          '&.Mui-selected': {
+                            backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
+                            '&:hover': {
+                              backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)',
+                            }
+                          }
+                        }
+                      }
                     }}
                   >
                     <MenuItem value="deepseek-r1">DeepSeek R1</MenuItem>
@@ -400,12 +430,10 @@ export default function ChatWindow() {
                     transform: selectedLibraries.length > 0 || homeKnowledgeMenuOpen 
                       ? 'translate(14px, -6px) scale(0.75)'
                       : 'translate(14px, 8px) scale(1)',
-                    color: (selectedLibraries.length > 0 || homeKnowledgeMenuOpen) 
-                      ? 'primary.main' 
-                      : theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
-                    '&.Mui-focused, &.MuiFormLabel-filled': {
+                    color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+                    '&.Mui-focused': {
                       transform: 'translate(14px, -6px) scale(0.75)',
-                      color: 'primary.main',
+                      color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
                     }
                   },
                   '& .MuiOutlinedInput-root': {
@@ -474,6 +502,7 @@ export default function ChatWindow() {
                         flex: '1',
                         textAlign: 'left',
                         pl: 0.5,
+                        color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
                         visibility: selectedLibraries.length > 0 ? 'visible' : 'hidden'
                       }}
                     >
@@ -486,7 +515,18 @@ export default function ChatWindow() {
                     onClose={() => setHomeKnowledgeMenuOpen(false)}
                     anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
                     transformOrigin={{ vertical: "top", horizontal: "left" }}
-                    sx={{ mt: 1 }}
+                    sx={{ 
+                      mt: 1,
+                      '& .MuiMenuItem-root.Mui-selected': {
+                        backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
+                        '&:hover': {
+                          backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)',
+                        }
+                      },
+                      '& .MuiCheckbox-root.Mui-checked': {
+                        color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)',
+                      }
+                    }}
                   >
                     <MenuItem
                       onClick={() => {
@@ -557,7 +597,13 @@ export default function ChatWindow() {
                         variant="contained"
                         size="small"
                         onClick={() => setHomeKnowledgeMenuOpen(false)}
-                        sx={{ mt: 1 }}
+                        sx={{ 
+                          mt: 1,
+                          backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)',
+                          '&:hover': {
+                            backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
+                          }
+                        }}
                       >
                         Confirm
                       </Button>
@@ -593,7 +639,7 @@ export default function ChatWindow() {
               },
             }}
           >
-            {activeConversation.messages.map((message) => (
+            {activeConversation?.messages.map((message) => (
               <MessageBubble
                 key={message.id}
                 message={message}
@@ -683,7 +729,7 @@ export default function ChatWindow() {
                     fontSize: "0.8rem",
                     bgcolor: "background.default",
                     borderColor: "rgba(0, 0, 0, 0.1)",
-                    color: "text.primary",
+                    color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
                     minWidth: 90,
                     "&:hover": {
                       bgcolor: "background.default",
@@ -699,12 +745,21 @@ export default function ChatWindow() {
                   anchorEl={modelButtonRef.current}
                   open={modelMenuOpen}
                   onClose={() => setModelMenuOpen(false)}
+                  sx={{
+                    '& .MuiMenuItem-root.Mui-selected': {
+                      backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
+                      '&:hover': {
+                        backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)',
+                      }
+                    }
+                  }}
                 >
                   <MenuItem
                     onClick={() => {
                       setSelectedLibrary("deepseek-r1");
                       setModelMenuOpen(false);
                     }}
+                    selected={selectedLibrary === "deepseek-r1"}
                   >
                     DeepThink (R1)
                   </MenuItem>
@@ -713,6 +768,7 @@ export default function ChatWindow() {
                       setSelectedLibrary("gpt-4");
                       setModelMenuOpen(false);
                     }}
+                    selected={selectedLibrary === "gpt-4"}
                   >
                     GPT-4
                   </MenuItem>
@@ -721,6 +777,7 @@ export default function ChatWindow() {
                       setSelectedLibrary("claude-2");
                       setModelMenuOpen(false);
                     }}
+                    selected={selectedLibrary === "claude-2"}
                   >
                     Claude 2
                   </MenuItem>
@@ -729,6 +786,7 @@ export default function ChatWindow() {
                       setSelectedLibrary("gemini");
                       setModelMenuOpen(false);
                     }}
+                    selected={selectedLibrary === "gemini"}
                   >
                     Gemini
                   </MenuItem>
@@ -747,7 +805,7 @@ export default function ChatWindow() {
                     fontSize: "0.8rem",
                     bgcolor: "background.default",
                     borderColor: "rgba(0, 0, 0, 0.1)",
-                    color: "text.primary",
+                    color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
                     maxWidth: 150,
                     minWidth: 120,
                     "&:hover": {
@@ -763,6 +821,7 @@ export default function ChatWindow() {
                       textOverflow: "ellipsis",
                       fontSize: "0.8rem",
                       lineHeight: 1,
+                      color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)'
                     }}
                   >
                     {getSelectedLibrariesDisplay()}
@@ -772,6 +831,17 @@ export default function ChatWindow() {
                   anchorEl={knowledgeButtonRef.current}
                   open={knowledgeMenuOpen}
                   onClose={() => setKnowledgeMenuOpen(false)}
+                  sx={{
+                    '& .MuiMenuItem-root.Mui-selected': {
+                      backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
+                      '&:hover': {
+                        backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)',
+                      }
+                    },
+                    '& .MuiCheckbox-root.Mui-checked': {
+                      color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)',
+                    }
+                  }}
                 >
                   <MenuItem
                     onClick={() => {
@@ -846,7 +916,13 @@ export default function ChatWindow() {
                       variant="contained"
                       size="small"
                       onClick={() => setKnowledgeMenuOpen(false)}
-                      sx={{ mt: 1 }}
+                      sx={{ 
+                        mt: 1,
+                        backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)',
+                        '&:hover': {
+                          backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
+                        }
+                      }}
                     >
                       Confirm
                     </Button>
@@ -868,7 +944,7 @@ export default function ChatWindow() {
                     p: 0.5,
                     width: 28,
                     height: 28,
-                    "&:hover": { color: "primary.main" },
+                    "&:hover": { color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)' },
                   }}
                 >
                   <AttachFileIcon fontSize="small" />
@@ -878,15 +954,15 @@ export default function ChatWindow() {
                   onClick={handleSend}
                   disabled={!input.trim()}
                   sx={{
-                    bgcolor: "background.default",
-                    color: input.trim() ? "primary.main" : "text.disabled",
+                    backgroundColor: "background.default",
+                    color: input.trim() ? (theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)') : "text.disabled",
                     p: 0.5,
                     width: 28,
                     height: 28,
                     borderRadius: "50%",
                     "&:hover": {
-                      bgcolor: "background.default",
-                      color: "primary.dark",
+                      backgroundColor: "background.default",
+                      color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)',
                     },
                   }}
                 >
@@ -915,7 +991,7 @@ export default function ChatWindow() {
                   maxHeight: "60vh",
                   display: "flex",
                   flexDirection: "column",
-                  bgcolor: "background.paper",
+                  backgroundColor: "background.paper",
                 }}
               >
                 <Typography variant="h6" gutterBottom>
@@ -943,7 +1019,7 @@ export default function ChatWindow() {
               flexShrink: 0,
               '& .MuiDrawer-paper': {
                 width: 350,
-                bgcolor: "background.paper",
+                backgroundColor: "background.paper",
               },
             }}
           >
