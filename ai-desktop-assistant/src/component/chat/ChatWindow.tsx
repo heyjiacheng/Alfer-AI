@@ -27,6 +27,7 @@ import { useChat, ChatMessage } from "../../contexts/ChatContext";
 import { useKnowledge } from "../../contexts/KnowledgeContext";
 import SearchIcon from "@mui/icons-material/Search";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
+import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import CloseIcon from "@mui/icons-material/Close";
 import { Checkbox } from "@mui/material";
 
@@ -379,6 +380,21 @@ export default function ChatWindow() {
 
                 <FormControl size="small" sx={{ 
                   minWidth: 150,
+                  position: 'relative',
+                  '& .MuiInputLabel-root': {
+                    backgroundColor: 'background.paper',
+                    padding: '0 4px',
+                    transform: selectedLibraries.length > 0 || homeKnowledgeMenuOpen 
+                      ? 'translate(14px, -6px) scale(0.75)'
+                      : 'translate(14px, 8px) scale(1)',
+                    color: (selectedLibraries.length > 0 || homeKnowledgeMenuOpen) 
+                      ? 'primary.main' 
+                      : 'rgba(0, 0, 0, 0.6)',
+                    '&.Mui-focused, &.MuiFormLabel-filled': {
+                      transform: 'translate(14px, -6px) scale(0.75)',
+                      color: 'primary.main',
+                    }
+                  },
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 3,
                     height: 36,
@@ -393,12 +409,23 @@ export default function ChatWindow() {
                     }
                   }
                 }}>
+                  <InputLabel 
+                    id="home-knowledge-base-label" 
+                    sx={{ 
+                      fontSize: '0.85rem',
+                      pointerEvents: 'none',
+                      zIndex: 1
+                    }}
+                  >
+                    Knowledge Base
+                  </InputLabel>
                   <Button
                     ref={homeKnowledgeButtonRef}
                     variant="outlined"
                     onClick={() => setHomeKnowledgeMenuOpen(true)}
-                    startIcon={<SearchIcon sx={{ fontSize: '1rem' }} />}
+                    endIcon={<ArrowDropDownIcon />}
                     size="small"
+                    aria-labelledby="home-knowledge-base-label"
                     sx={{ 
                       height: 36,
                       borderRadius: 3,
@@ -410,20 +437,32 @@ export default function ChatWindow() {
                       fontWeight: 'normal',
                       justifyContent: 'space-between',
                       minWidth: 150,
-                      bgcolor: "background.default",
+                      bgcolor: 'background.paper',
                       color: "text.primary",
+                      display: 'flex',
                       '&:hover': {
                         borderColor: 'primary.main',
-                        bgcolor: 'background.default',
+                        bgcolor: 'background.paper',
                       },
-                      "& .MuiButton-startIcon": {
+                      "& .MuiButton-endIcon": {
                         flexShrink: 0,
+                        marginLeft: 'auto',
+                        color: 'action.active'
                       }
                     }}
                   >
                     <Typography
                       noWrap
-                      sx={{ overflow: "hidden", textOverflow: "ellipsis" }}
+                      sx={{ 
+                        overflow: "hidden", 
+                        textOverflow: "ellipsis",
+                        fontSize: "0.85rem",
+                        py: 0.7,
+                        flex: '1',
+                        textAlign: 'left',
+                        pl: 0.5,
+                        visibility: selectedLibraries.length > 0 ? 'visible' : 'hidden'
+                      }}
                     >
                       {getSelectedLibrariesDisplay()}
                     </Typography>
