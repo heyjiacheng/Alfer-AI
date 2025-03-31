@@ -898,6 +898,7 @@ export default function ChatWindow() {
                   ref={knowledgeButtonRef}
                   variant="outlined"
                   onClick={() => setKnowledgeMenuOpen(true)}
+                  endIcon={<ArrowDropDownIcon sx={{ color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }} />}
                   sx={{
                     borderRadius: 3,
                     textTransform: "none",
@@ -912,9 +913,16 @@ export default function ChatWindow() {
                     color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
                     maxWidth: 150,
                     minWidth: 120,
+                    display: 'flex',
+                    justifyContent: 'space-between',
                     "&:hover": {
                       bgcolor: "background.default",
                       borderColor: "primary.main",
+                    },
+                    "& .MuiButton-endIcon": {
+                      flexShrink: 0,
+                      marginLeft: 'auto',
+                      color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)'
                     }
                   }}
                 >

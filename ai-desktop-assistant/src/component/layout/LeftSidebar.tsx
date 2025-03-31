@@ -150,23 +150,21 @@ export default function LeftSidebar() {
             }}>
               <Button
                 fullWidth
-                variant="contained"
+                variant="text"
                 onClick={() => setModalOpen(true)}
                 sx={{ 
                   py: 0.5,
                   borderRadius: 2,
-                  bgcolor: 'rgba(0, 0, 0, 0.1)',
+                  bgcolor: 'transparent',
                   color: 'text.primary',
                   boxShadow: 'none',
                   textAlign: 'left',
                   justifyContent: 'flex-start',
                   pl: 2,
-                  border: '1px solid',
-                  borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.25)' : 'rgba(0, 0, 0, 0.15)',
+                  border: 'none',
                   '&:hover': {
-                    bgcolor: 'rgba(0, 0, 0, 0.15)',
+                    bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
                     boxShadow: 'none',
-                    borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.35)' : 'rgba(0, 0, 0, 0.25)'
                   }
                 }}
               >
@@ -207,23 +205,21 @@ export default function LeftSidebar() {
           }}>
             <Button
               fullWidth
-              variant="contained"
+              variant="text"
               onClick={createNewConversation}
               sx={{ 
                 py: 0.5,
                 borderRadius: 2,
-                bgcolor: 'rgba(0, 0, 0, 0.1)',
+                bgcolor: 'transparent',
                 color: 'text.primary',
                 boxShadow: 'none',
                 textAlign: 'left',
                 justifyContent: 'flex-start',
                 pl: 2,
-                border: '1px solid', 
-                borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.25)' : 'rgba(0, 0, 0, 0.15)',
+                border: 'none',
                 '&:hover': {
-                  bgcolor: 'rgba(0, 0, 0, 0.15)',
+                  bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
                   boxShadow: 'none',
-                  borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.35)' : 'rgba(0, 0, 0, 0.25)'
                 }
               }}
             >

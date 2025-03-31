@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Typography, Paper, IconButton, TextField, Button, Avatar, Divider, useTheme } from '@mui/material';
+import { Box, Typography, Paper, IconButton, TextField, Button, Avatar, useTheme } from '@mui/material';
 import { ChatMessage, useChat  } from '../../contexts/ChatContext';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import EditIcon from '@mui/icons-material/Edit';
@@ -65,20 +65,6 @@ export default React.memo(function MessageBubble({ message, isUser, onViewSource
       position: 'relative',
       width: '100%'
     }}>
-      {!isUser && (
-        // AI回复上方分隔线
-        <Box 
-          sx={{ 
-            width: '100%', 
-            maxWidth: '650px',
-            mb: 1.5,
-            mt: 1
-          }}
-        >
-          <Divider light sx={{ borderColor: dividerColor }} />
-        </Box>
-      )}
-      
       <Box sx={{ 
         display: 'flex',
         flexDirection: 'column',
@@ -143,21 +129,6 @@ export default React.memo(function MessageBubble({ message, isUser, onViewSource
             pr: 0.5,
             position: 'relative'
           }}>
-            {/* 左侧回答标记 */}
-            <Box 
-              sx={{ 
-                position: 'absolute',
-                left: -10,
-                top: 0,
-                bottom: 0,
-                width: 3,
-                borderRadius: 2,
-                bgcolor: 'primary.light',
-                opacity: isDarkMode ? 0.8 : 0.7, // 深色模式下稍微提高不透明度
-                display: { xs: 'none', sm: 'block' }
-              }} 
-            />
-            
             <Typography 
               variant="body1" 
               component="div" 
@@ -224,19 +195,6 @@ export default React.memo(function MessageBubble({ message, isUser, onViewSource
           </IconButton>
         )}
       </Box>
-      
-      {!isUser && (
-        // AI回复下方分隔线
-        <Box 
-          sx={{ 
-            width: '100%', 
-            maxWidth: '650px',
-            mt: 1.5
-          }}
-        >
-          <Divider light sx={{ borderColor: dividerColor }} />
-        </Box>
-      )}
     </Box>
   );
 });
