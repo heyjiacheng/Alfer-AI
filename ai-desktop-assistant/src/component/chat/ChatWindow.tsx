@@ -166,7 +166,7 @@ export default function ChatWindow() {
 
   const getSelectedLibrariesDisplay = () => {
     if (selectedLibraries.length === 0) {
-      return "Knowledge Base";
+      return homeKnowledgeMenuOpen ? "" : "Knowledge Base";
     } else if (selectedLibraries.length === 1) {
       const lib = allLibraries.find((lib) => lib.id === selectedLibraries[0]);
       if (lib) {
@@ -174,7 +174,7 @@ export default function ChatWindow() {
           ? `${lib.name.substring(0, 8)}...`
           : lib.name;
       }
-      return "Knowledge Base";
+      return homeKnowledgeMenuOpen ? "" : "Knowledge Base";
     } else {
       return `${selectedLibraries.length} Knowledge Bases`;
     }
@@ -266,7 +266,7 @@ export default function ChatWindow() {
     >
       {!activeConversation ? (
         <CenteredBox>
-          <Typography variant="h3" gutterBottom sx={{ fontWeight: 600, mb: 4 }}>
+          <Typography variant="h3" gutterBottom sx={{ fontFamily: '"Sora", sans-serif', fontWeight: 600, mb: 4 }}>
             Álfer AI Assistant
           </Typography>
           <Box sx={{ width: "100%", maxWidth: 850, px: 2 }}>
@@ -312,7 +312,8 @@ export default function ChatWindow() {
                   '& .MuiInputBase-inputMultiline': {
                     py: 0.7,
                     px: 1.5,
-                    lineHeight: 1.3
+                    lineHeight: 1.3,
+                    fontFamily: '"Space Mono", monospace'
                   }
                 }}
                 InputProps={{
@@ -358,7 +359,8 @@ export default function ChatWindow() {
                     },
                     borderRadius: 8,
                     paddingLeft: '6px',
-                    paddingRight: '6px'
+                    paddingRight: '6px',
+                    fontFamily: '"Space Mono", monospace'
                   },
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 3,
@@ -380,7 +382,8 @@ export default function ChatWindow() {
                       fontSize: '0.85rem',
                       pointerEvents: 'none',
                       zIndex: 1,
-                      borderRadius: 8
+                      borderRadius: 8,
+                      fontFamily: '"Space Mono", monospace'
                     }}
                   >
                     AI Model
@@ -429,7 +432,9 @@ export default function ChatWindow() {
                         flex: '1',
                         textAlign: 'left',
                         pl: 0.5,
+                        pr: 1.5,
                         color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+                        fontFamily: '"Space Mono", monospace'
                       }}
                     >
                       {selectedLibrary === "deepseek-r1" ? "DeepSeek R1" : selectedLibrary}
@@ -443,6 +448,9 @@ export default function ChatWindow() {
                     transformOrigin={{ vertical: "top", horizontal: "left" }}
                     sx={{ 
                       mt: 1,
+                      '& .MuiMenuItem-root': {
+                        fontFamily: '"Space Mono", monospace'
+                      },
                       '& .MuiMenuItem-root.Mui-selected': {
                         backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
                         '&:hover': {
@@ -506,7 +514,8 @@ export default function ChatWindow() {
                     },
                     borderRadius: 8,
                     paddingLeft: '6px',
-                    paddingRight: '6px'
+                    paddingRight: '6px',
+                    fontFamily: '"Space Mono", monospace'
                   },
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 3,
@@ -528,7 +537,8 @@ export default function ChatWindow() {
                       fontSize: '0.85rem',
                       pointerEvents: 'none',
                       zIndex: 1,
-                      borderRadius: 8
+                      borderRadius: 8,
+                      fontFamily: '"Space Mono", monospace'
                     }}
                   >
                     Knowledge Base
@@ -577,11 +587,14 @@ export default function ChatWindow() {
                         flex: '1',
                         textAlign: 'left',
                         pl: 0.5,
+                        pr: 1.5,
                         color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
-                        visibility: selectedLibraries.length > 0 ? 'visible' : 'hidden'
+                        fontFamily: '"Space Mono", monospace',
+                        opacity: homeKnowledgeMenuOpen && selectedLibraries.length === 0 ? 0 : 1,
+                        visibility: homeKnowledgeMenuOpen && selectedLibraries.length === 0 ? 'hidden' : 'visible'
                       }}
                     >
-                      {getSelectedLibrariesDisplay()}
+                      {homeKnowledgeMenuOpen && selectedLibraries.length === 0 ? '' : getSelectedLibrariesDisplay()}
                     </Typography>
                   </Button>
                   <Menu
@@ -592,6 +605,9 @@ export default function ChatWindow() {
                     transformOrigin={{ vertical: "top", horizontal: "left" }}
                     sx={{ 
                       mt: 1,
+                      '& .MuiMenuItem-root': {
+                        fontFamily: '"Space Mono", monospace'
+                      },
                       '& .MuiMenuItem-root.Mui-selected': {
                         backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
                         '&:hover': {
@@ -673,6 +689,7 @@ export default function ChatWindow() {
                         onClick={() => setHomeKnowledgeMenuOpen(false)}
                         sx={{ 
                           mt: 1,
+                          fontFamily: '"Space Mono", monospace',
                           backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)',
                           '&:hover': {
                             backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
@@ -848,6 +865,9 @@ export default function ChatWindow() {
                   open={modelMenuOpen}
                   onClose={() => setModelMenuOpen(false)}
                   sx={{
+                    '& .MuiMenuItem-root': {
+                      fontFamily: '"Space Mono", monospace'
+                    },
                     '& .MuiMenuItem-root.Mui-selected': {
                       backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
                       '&:hover': {
@@ -933,10 +953,12 @@ export default function ChatWindow() {
                       textOverflow: "ellipsis",
                       fontSize: "0.8rem",
                       lineHeight: 1,
-                      color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)'
+                      color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+                      opacity: knowledgeMenuOpen && selectedLibraries.length === 0 ? 0 : 1,
+                      visibility: knowledgeMenuOpen && selectedLibraries.length === 0 ? 'hidden' : 'visible'
                     }}
                   >
-                    {getSelectedLibrariesDisplay()}
+                    {knowledgeMenuOpen && selectedLibraries.length === 0 ? '' : getSelectedLibrariesDisplay()}
                   </Typography>
                 </Button>
                 <Menu
@@ -944,6 +966,9 @@ export default function ChatWindow() {
                   open={knowledgeMenuOpen}
                   onClose={() => setKnowledgeMenuOpen(false)}
                   sx={{
+                    '& .MuiMenuItem-root': {
+                      fontFamily: '"Space Mono", monospace'
+                    },
                     '& .MuiMenuItem-root.Mui-selected': {
                       backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
                       '&:hover': {
@@ -1029,6 +1054,7 @@ export default function ChatWindow() {
                       onClick={() => setKnowledgeMenuOpen(false)}
                       sx={{ 
                         mt: 1,
+                        fontFamily: '"Space Mono", monospace',
                         backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)',
                         '&:hover': {
                           backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',

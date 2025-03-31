@@ -109,7 +109,7 @@ export default function CreateKnowledgeModal({ open, onClose, library, mode }: C
       // 在更新状态之前直接关闭窗口，减少状态变化导致的闪烁
       onClose();
     } catch (error) {
-      console.error("处理知识库操作时出错:", error);
+      console.error("Error processing knowledge base operation:", error);
       // 这里可以添加错误提示UI
     } finally {
       setLoading(false);
@@ -129,10 +129,10 @@ export default function CreateKnowledgeModal({ open, onClose, library, mode }: C
           if (typeof reader.result === 'string') {
             resolve(reader.result);
           } else {
-            reject(new Error('读取文件失败'));
+            reject(new Error('Failed to read file'));
           }
         };
-        reader.onerror = () => reject(new Error('读取文件失败'));
+        reader.onerror = () => reject(new Error('Failed to read file'));
         reader.readAsDataURL(file);
       });
     }
@@ -161,7 +161,7 @@ export default function CreateKnowledgeModal({ open, onClose, library, mode }: C
         position: 'relative',
         fontWeight: 'medium'
       }}>
-        {mode === 'create' ? '创建知识库' : '编辑知识库'}
+        {mode === 'create' ? 'Create Knowledge Base' : 'Edit Knowledge Base'}
         <IconButton 
           sx={{ position: 'absolute', right: 8, top: 8 }} 
           onClick={() => {
@@ -182,30 +182,30 @@ export default function CreateKnowledgeModal({ open, onClose, library, mode }: C
         <Box sx={{ mb: 3, mt: 1.5 }}>
           <TextField
             fullWidth
-            label="知识库名称"
+            label="Knowledge Base Name *"
             value={name}
             onChange={(e) => setName(e.target.value)}
             sx={{ mb: 2 }}
             variant="outlined"
+            required
           />
           
           <TextField
             fullWidth
-            label="知识库描述"
+            label="Knowledge Base Description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             sx={{ mb: 2 }}
             multiline
             rows={2}
             variant="outlined"
-            placeholder="描述这个知识库的内容和用途"
           />
         </Box>
 
         <Divider sx={{ my: 2 }} />
         
         <Typography variant="subtitle1" sx={{ mb: 1 }}>
-          添加文档
+          Add Documents
         </Typography>
 
         <Box {...getRootProps()} sx={{ 
@@ -220,15 +220,15 @@ export default function CreateKnowledgeModal({ open, onClose, library, mode }: C
           <input {...getInputProps()} />
           <Box textAlign="center">
             <InsertDriveFile fontSize="large" color="action" />
-            <Typography>拖放文件至此或点击上传</Typography>
+            <Typography>Drag and drop files here or click to upload</Typography>
             <Typography variant="caption" color="text.secondary">
-              支持PDF、Word、TXT和JSON格式
+              Supports PDF, Word, TXT and JSON formats
             </Typography>
           </Box>
         </Box>
 
         <Typography variant="subtitle1" gutterBottom>
-          已上传文档
+          Uploaded Documents
           {(existingDocuments.length > 0 || files.length > 0) && 
             <Chip 
               label={existingDocuments.length + files.length} 
@@ -262,7 +262,7 @@ export default function CreateKnowledgeModal({ open, onClose, library, mode }: C
                     align="center" 
                     color="text.secondary"
                   >
-                    暂无文档
+                    No documents
                   </Typography>
                 } 
               />
@@ -355,7 +355,7 @@ export default function CreateKnowledgeModal({ open, onClose, library, mode }: C
             }}
             startIcon={<Delete />}
           >
-            删除知识库
+            Delete Knowledge Base
           </Button>
         )}
         <Box sx={{ flexGrow: 1 }} />
@@ -364,7 +364,7 @@ export default function CreateKnowledgeModal({ open, onClose, library, mode }: C
           onClick={handleSubmit}
           disabled={loading || !name.trim()}
         >
-          {loading ? <CircularProgress size={24} /> : mode === 'create' ? '创建知识库' : '保存更改'}
+          {loading ? <CircularProgress size={24} /> : mode === 'create' ? 'Create' : 'Save Changes'}
         </Button>
       </DialogActions>
     </Dialog>

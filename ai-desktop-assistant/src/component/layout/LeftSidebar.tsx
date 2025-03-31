@@ -1,7 +1,9 @@
-import { Box, Button, IconButton, Typography, alpha, useMediaQuery, useTheme as useMuiTheme } from '@mui/material';
+import { Box, Button, IconButton, Typography, alpha, useMediaQuery, useTheme as useMuiTheme, Divider } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import MenuIcon from '@mui/icons-material/Menu';
+import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
+import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import { useKnowledge } from '../../contexts/KnowledgeContext';
 import KnowledgeBase from '../knowledge/KnowledgeBase';
 import ChatHistory from '../../component/chat/ChatHistory.tsx';
@@ -137,7 +139,7 @@ export default function LeftSidebar() {
                 alt="Logo" 
                 style={{ height: 36, width: 36 }} 
               />
-              <Typography variant="h6" component="div">
+              <Typography variant="h6" component="div" sx={{ fontFamily: '"Sora", sans-serif' }}>
                 Álfer AI
               </Typography>
             </Box>
@@ -167,16 +169,23 @@ export default function LeftSidebar() {
                     boxShadow: 'none',
                   }
                 }}
+                startIcon={<FolderOutlinedIcon fontSize="small" />}
               >
                 <Typography sx={{ 
-                  fontFamily: '"Space Mono", monospace',
-                  letterSpacing: '0.5px',
+                  fontFamily: '"Sora", sans-serif',
+                  letterSpacing: '0.2px',
                   fontSize: '0.85rem'
                 }}>
                   New Knowledge Base
                 </Typography>
               </Button>
             </Box>
+            
+            <Divider sx={{ 
+              my: 0.75, 
+              opacity: 0.6,
+              bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'
+            }} />
           </Box>
 
           <Box sx={{ 
@@ -191,7 +200,9 @@ export default function LeftSidebar() {
               backgroundColor: theme => alpha(theme.palette.text.secondary, 0.1),
               borderRadius: '6px',
             },
-            mb: -0.5
+            mb: -0.5,
+            mt: -0.5,
+            pt: 0.5
           }}>
             <KnowledgeBase />
           </Box>
@@ -222,16 +233,23 @@ export default function LeftSidebar() {
                   boxShadow: 'none',
                 }
               }}
+              startIcon={<ChatBubbleOutlineIcon fontSize="small" />}
             >
               <Typography sx={{ 
-                fontFamily: '"Space Mono", monospace',
-                letterSpacing: '0.5px',
+                fontFamily: '"Sora", sans-serif',
+                letterSpacing: '0.2px',
                 fontSize: '0.85rem'
               }}>
                 New Conversation
               </Typography>
             </Button>
           </Box>
+          
+          <Divider sx={{ 
+            my: 0.75, 
+            opacity: 0.6,
+            bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'
+          }} />
 
           <Box sx={{ 
             height: '55%',
