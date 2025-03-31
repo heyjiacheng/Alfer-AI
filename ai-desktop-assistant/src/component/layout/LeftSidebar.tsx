@@ -145,14 +145,14 @@ export default function LeftSidebar() {
             <Box sx={{ 
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'center'
+              alignItems: 'center',
+              width: '100%'
             }}>
               <Button
                 fullWidth
                 variant="contained"
                 onClick={() => setModalOpen(true)}
                 sx={{ 
-                  mr: 1,
                   py: 0.5,
                   borderRadius: 2,
                   bgcolor: 'rgba(0, 0, 0, 0.1)',
@@ -161,13 +161,22 @@ export default function LeftSidebar() {
                   textAlign: 'left',
                   justifyContent: 'flex-start',
                   pl: 2,
+                  border: '1px solid',
+                  borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.25)' : 'rgba(0, 0, 0, 0.15)',
                   '&:hover': {
                     bgcolor: 'rgba(0, 0, 0, 0.15)',
-                    boxShadow: 'none'
+                    boxShadow: 'none',
+                    borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.35)' : 'rgba(0, 0, 0, 0.25)'
                   }
                 }}
               >
-                新建知识库
+                <Typography sx={{ 
+                  fontFamily: '"Space Mono", monospace',
+                  letterSpacing: '0.5px',
+                  fontSize: '0.85rem'
+                }}>
+                  New Knowledge Base
+                </Typography>
               </Button>
             </Box>
           </Box>
@@ -175,20 +184,23 @@ export default function LeftSidebar() {
           <Box sx={{ 
             height: '35%',
             overflow: 'hidden',
-            '&:hover': { overflow: 'auto' },
+            overflowX: 'hidden',
+            '&:hover': { overflow: 'auto', overflowX: 'hidden' },
             '&::-webkit-scrollbar': {
               width: '6px',
             },
             '&::-webkit-scrollbar-thumb': {
               backgroundColor: theme => alpha(theme.palette.text.secondary, 0.1),
               borderRadius: '6px',
-            }
+            },
+            mb: -0.5
           }}>
             <KnowledgeBase />
           </Box>
 
           <Box sx={{ 
             p: 2, 
+            pt: 1,
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center'
@@ -206,13 +218,22 @@ export default function LeftSidebar() {
                 textAlign: 'left',
                 justifyContent: 'flex-start',
                 pl: 2,
+                border: '1px solid', 
+                borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.25)' : 'rgba(0, 0, 0, 0.15)',
                 '&:hover': {
                   bgcolor: 'rgba(0, 0, 0, 0.15)',
-                  boxShadow: 'none'
+                  boxShadow: 'none',
+                  borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.35)' : 'rgba(0, 0, 0, 0.25)'
                 }
               }}
             >
-              新建对话
+              <Typography sx={{ 
+                fontFamily: '"Space Mono", monospace',
+                letterSpacing: '0.5px',
+                fontSize: '0.85rem'
+              }}>
+                New Conversation
+              </Typography>
             </Button>
           </Box>
 

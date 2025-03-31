@@ -18,6 +18,7 @@ interface KnowledgeContextType {
   readonly libraries: KnowledgeLibrary[];
   readonly folders: KnowledgeFolder[];
   readonly activeLib?: string;
+  readonly selectedLibraryId: string | null;
   readonly createLibrary: (name: string, description: string) => Promise<string>;
   readonly deleteLibrary: (id: string) => void;
   readonly addDocumentToLib: (
@@ -30,6 +31,7 @@ interface KnowledgeContextType {
   ) => void;
   readonly removeDocumentFromLib: (libId: string, docId: string) => void;
   readonly setActiveLib: (id: string) => void;
+  readonly selectLibrary: (id: string | null) => void;
   readonly documents: FileDocument[];
   readonly updateFolder: (id: string, name: string) => void;
   readonly deleteFolder: (id: string) => void;
@@ -52,6 +54,7 @@ export function KnowledgeProvider({
   const [libraries, setLibraries] = useState<KnowledgeLibrary[]>([]);
   const [folders, setFolders] = useState<KnowledgeFolder[]>([]);
   const [activeLib, setActiveLib] = useState<string>('');
+  const [selectedLibraryId, setSelectedLibraryId] = useState<string | null>(null);
   const [documents, setDocuments] = useState<FileDocument[]>([]);
 
   // 初始化加载知识库和文件夹
@@ -287,6 +290,7 @@ export function KnowledgeProvider({
     libraries,
     folders,
     activeLib,
+    selectedLibraryId,
     documents,
     createLibrary,
     deleteLibrary,
@@ -294,9 +298,10 @@ export function KnowledgeProvider({
     updateLibrary,
     removeDocumentFromLib,
     setActiveLib,
+    selectLibrary: (id: string | null) => setSelectedLibraryId(id),
     updateFolder,
     deleteFolder
-  }), [libraries, folders, activeLib, documents]);
+  }), [libraries, folders, activeLib, selectedLibraryId, documents]);
 
   return (
     <KnowledgeContext.Provider value={value}>

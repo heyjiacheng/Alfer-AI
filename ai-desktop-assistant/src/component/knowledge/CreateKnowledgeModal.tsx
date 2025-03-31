@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   Dialog, 
   DialogTitle,
@@ -105,6 +105,8 @@ export default function CreateKnowledgeModal({ open, onClose, library, mode }: C
           });
         }
       }
+      
+      // 在更新状态之前直接关闭窗口，减少状态变化导致的闪烁
       onClose();
     } catch (error) {
       console.error("处理知识库操作时出错:", error);
@@ -162,7 +164,10 @@ export default function CreateKnowledgeModal({ open, onClose, library, mode }: C
         {mode === 'create' ? '创建知识库' : '编辑知识库'}
         <IconButton 
           sx={{ position: 'absolute', right: 8, top: 8 }} 
-          onClick={onClose}
+          onClick={() => {
+            // 在对话框关闭时立即执行关闭函数
+            onClose();
+          }}
         >
           <Close />
         </IconButton>
@@ -174,7 +179,7 @@ export default function CreateKnowledgeModal({ open, onClose, library, mode }: C
         bgcolor: theme => alpha(theme.palette.background.paper, 0.9),
         backdropFilter: 'blur(10px)',
       }}>
-        <Box sx={{ mb: 3 }}>
+        <Box sx={{ mb: 3, mt: 1.5 }}>
           <TextField
             fullWidth
             label="知识库名称"
