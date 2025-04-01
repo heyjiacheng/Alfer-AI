@@ -196,15 +196,44 @@ export default function CreateKnowledgeModal({ open, onClose, library, mode }: C
             onChange={(e) => setName(e.target.value)}
             sx={{ 
               mb: 2,
+              position: 'relative',
               '& .MuiInputLabel-root': {
-                fontFamily: '"Space Mono", monospace'
+                fontFamily: '"Space Mono", monospace',
+                backgroundColor: theme => alpha(theme.palette.background.paper, 1),
+                borderRadius: '4px',
+                paddingLeft: '4px',
+                paddingRight: '4px',
+                '&.Mui-focused': {
+                  backgroundColor: theme => alpha(theme.palette.background.paper, 1),
+                  color: 'text.primary'
+                }
+              },
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '8px',
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'primary.main',
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'primary.main',
+                  borderWidth: '1px',
+                }
               },
               '& .MuiOutlinedInput-input': {
-                fontFamily: '"Space Mono", monospace'
+                fontFamily: '"Space Mono", monospace',
+                padding: '14px 16px'
+              },
+              '&::before': {
+                content: '"*"',
+                position: 'absolute',
+                top: '-10px',
+                left: '-10px',
+                color: 'red',
+                fontSize: '18px',
+                fontWeight: 'bold'
               }
             }}
             variant="outlined"
-            required
+            required={false}
           />
           
           <TextField
@@ -215,10 +244,29 @@ export default function CreateKnowledgeModal({ open, onClose, library, mode }: C
             sx={{ 
               mb: 2,
               '& .MuiInputLabel-root': {
-                fontFamily: '"Space Mono", monospace'
+                fontFamily: '"Space Mono", monospace',
+                backgroundColor: theme => alpha(theme.palette.background.paper, 1),
+                borderRadius: '4px',
+                paddingLeft: '4px',
+                paddingRight: '4px',
+                '&.Mui-focused': {
+                  backgroundColor: theme => alpha(theme.palette.background.paper, 1),
+                  color: 'text.primary'
+                }
+              },
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '8px',
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'primary.main',
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'primary.main',
+                  borderWidth: '1px',
+                }
               },
               '& .MuiOutlinedInput-input': {
-                fontFamily: '"Space Mono", monospace'
+                fontFamily: '"Space Mono", monospace',
+                padding: '14px 16px'
               }
             }}
             multiline
@@ -260,9 +308,9 @@ export default function CreateKnowledgeModal({ open, onClose, library, mode }: C
           </Typography>
         </Box>
 
-        <Typography variant="subtitle1" gutterBottom>
-          Uploaded Documents
-          {(existingDocuments.length > 0 || files.length > 0) && 
+        {existingDocuments.length > 0 || files.length > 0 ? (
+          <Typography variant="subtitle1" sx={{ fontFamily: '"Sora", sans-serif', fontWeight: 600, mt: 3, mb: 1 }}>
+            Documents
             <Chip 
               label={existingDocuments.length + files.length} 
               size="small" 
@@ -270,14 +318,11 @@ export default function CreateKnowledgeModal({ open, onClose, library, mode }: C
               color="primary" 
               variant="outlined"
             />
-          }
-        </Typography>
+          </Typography>
+        ) : null}
 
         {existingDocuments.length > 0 && (
           <>
-            <Typography variant="subtitle1" sx={{ fontFamily: '"Sora", sans-serif', fontWeight: 600, mt: 3, mb: 1 }}>
-              Documents
-            </Typography>
             <List sx={{ 
               bgcolor: theme => alpha(theme.palette.background.default, 0.4),
               borderRadius: 2,

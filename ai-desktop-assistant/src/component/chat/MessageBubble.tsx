@@ -243,11 +243,11 @@ export default React.memo(function MessageBubble({ message, isUser, onViewSource
             <Paper
               elevation={1}
               sx={{
-                maxWidth: '80%',
+                maxWidth: isEditing ? '95%' : '80%',
                 bgcolor: userBubbleBgColor, // 根据主题调整背景色
                 color: 'text.primary',
                 borderRadius: 3.5, // 更圆润的边角
-                p: 2,
+                p: isEditing ? 1.5 : 2,
                 boxShadow: isDarkMode ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 2px rgba(0,0,0,0.1)',
                 wordWrap: 'break-word',
                 whiteSpace: 'pre-wrap',
@@ -260,7 +260,7 @@ export default React.memo(function MessageBubble({ message, isUser, onViewSource
                   sx={{ 
                     display: 'flex', 
                     flexDirection: 'column', 
-                    gap: 1.5,
+                    gap: 1,
                     transition: 'all 0.3s ease-in-out',
                     animation: 'fadeIn 0.2s ease-in-out',
                     '@keyframes fadeIn': {
@@ -283,10 +283,12 @@ export default React.memo(function MessageBubble({ message, isUser, onViewSource
                     variant="outlined"
                     size="small"
                     autoFocus
+                    minRows={1}
+                    maxRows={3}
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         borderRadius: 2,
-                        backgroundColor: isDarkMode ? 'rgba(60, 60, 60, 0.2)' : 'rgba(255, 255, 255, 0.3)',
+                        backgroundColor: 'transparent',
                         '& fieldset': {
                           border: 'none',
                         },
@@ -295,14 +297,23 @@ export default React.memo(function MessageBubble({ message, isUser, onViewSource
                         },
                         '&.Mui-focused fieldset': {
                           border: 'none',
-                        }
+                        },
+                        minHeight: '32px',
+                        padding: '2px 8px'
                       },
                       '& .MuiInputBase-inputMultiline': {
-                        fontFamily: '"Hedvig Letters Serif", serif',
+                        fontFamily: '"Hedvig Sans Serif", sans-serif',
                         fontSize: '1.05rem',
-                        lineHeight: 1.5,
-                        padding: '10px 14px',
-                      }
+                        lineHeight: 1.3,
+                        padding: '4px 8px',
+                        maxHeight: '80px',
+                        minHeight: '28px',
+                        whiteSpace: 'pre-wrap',
+                        wordWrap: 'break-word',
+                        wordBreak: 'break-word',
+                        overflowWrap: 'break-word'
+                      },
+                      width: '100%'
                     }}
                   />
                   <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5 }}>
@@ -344,7 +355,7 @@ export default React.memo(function MessageBubble({ message, isUser, onViewSource
                         }
                       }}
                     >
-                      Save
+                      Send
                     </Button>
                   </Box>
                 </Box>
@@ -352,7 +363,7 @@ export default React.memo(function MessageBubble({ message, isUser, onViewSource
                 <Typography variant="body1" component="div" sx={{ 
                   lineHeight: 1.7,
                   fontSize: '1.1rem',
-                  fontFamily: '"Hedvig Letters Serif", serif'
+                  fontFamily: '"Hedvig Sans Serif", sans-serif'
                 }}>
                   {renderContent()}
                 </Typography>
@@ -380,7 +391,7 @@ export default React.memo(function MessageBubble({ message, isUser, onViewSource
                 fontSize: '1.1rem',
                 fontWeight: 400,
                 pl: 1.5,
-                fontFamily: '"Hedvig Letters Serif", serif'
+                fontFamily: '"Hedvig Sans Serif", sans-serif'
               }}
             >
               {renderContent()}

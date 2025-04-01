@@ -473,6 +473,8 @@ export default function ChatWindow() {
                     anchorEl={modelButtonRef.current}
                     open={modelMenuOpen}
                     onClose={() => setModelMenuOpen(false)}
+                    anchorOrigin={{ vertical: "top", horizontal: "left" }}
+                    transformOrigin={{ vertical: "bottom", horizontal: "left" }}
                     sx={{ 
                       '& .MuiPaper-root': {
                         borderRadius: 2,
@@ -698,18 +700,18 @@ export default function ChatWindow() {
                         pl: 0.5,
                         pr: 1.5,
                         color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
-                        fontFamily: '"Space Mono", monospace',
-                        opacity: homeKnowledgeMenuOpen && selectedLibraries.length === 0 ? 0 : 1,
-                        visibility: homeKnowledgeMenuOpen && selectedLibraries.length === 0 ? 'hidden' : 'visible'
+                        fontFamily: '"Space Mono", monospace'
                       }}
                     >
-                      {homeKnowledgeMenuOpen && selectedLibraries.length === 0 ? '' : getSelectedLibrariesDisplay()}
+                      {getSelectedLibrariesDisplay()}
                     </Typography>
                   </Button>
                   <Menu
                     anchorEl={homeKnowledgeButtonRef.current}
                     open={homeKnowledgeMenuOpen}
                     onClose={() => setHomeKnowledgeMenuOpen(false)}
+                    anchorOrigin={{ vertical: "top", horizontal: "left" }}
+                    transformOrigin={{ vertical: "bottom", horizontal: "left" }}
                     sx={{ 
                       '& .MuiPaper-root': {
                         borderRadius: 2,
@@ -976,6 +978,8 @@ export default function ChatWindow() {
                   anchorEl={modelButtonRef.current}
                   open={modelMenuOpen}
                   onClose={() => setModelMenuOpen(false)}
+                  anchorOrigin={{ vertical: "top", horizontal: "left" }}
+                  transformOrigin={{ vertical: "bottom", horizontal: "left" }}
                   sx={{ 
                     '& .MuiPaper-root': {
                       borderRadius: 2,
@@ -1149,18 +1153,18 @@ export default function ChatWindow() {
                       fontSize: "0.8rem",
                       lineHeight: 1,
                       color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
-                      opacity: knowledgeMenuOpen && selectedLibraries.length === 0 ? 0 : 1,
-                      visibility: knowledgeMenuOpen && selectedLibraries.length === 0 ? 'hidden' : 'visible',
                       fontFamily: '"Space Mono", monospace'
                     }}
                   >
-                    {knowledgeMenuOpen && selectedLibraries.length === 0 ? '' : getSelectedLibrariesDisplay()}
+                    {getSelectedLibrariesDisplay()}
                   </Typography>
                 </Button>
                 <Menu
                   anchorEl={knowledgeButtonRef.current}
                   open={knowledgeMenuOpen}
                   onClose={() => setKnowledgeMenuOpen(false)}
+                  anchorOrigin={{ vertical: "top", horizontal: "left" }}
+                  transformOrigin={{ vertical: "bottom", horizontal: "left" }}
                   sx={{
                     '& .MuiPaper-root': {
                       borderRadius: 2,
