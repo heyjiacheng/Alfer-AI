@@ -473,14 +473,14 @@ export default function ChatWindow() {
                     anchorEl={modelButtonRef.current}
                     open={modelMenuOpen}
                     onClose={() => setModelMenuOpen(false)}
-                    anchorOrigin={{ vertical: "top", horizontal: "left" }}
-                    transformOrigin={{ vertical: "bottom", horizontal: "left" }}
+                    anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+                    transformOrigin={{ vertical: "top", horizontal: "left" }}
                     sx={{ 
                       '& .MuiPaper-root': {
                         borderRadius: 2,
-                        backgroundColor: theme => alpha(theme.palette.background.paper, 0.9),
-                        backdropFilter: 'blur(8px)',
-                        boxShadow: '0 8px 16px rgba(0,0,0,0.1)',
+                        backgroundColor: theme => alpha(theme.palette.background.paper, 0.75),
+                        backdropFilter: 'blur(10px)',
+                        boxShadow: '0 8px 16px rgba(0,0,0,0.08)',
                         overflow: 'hidden',
                         minWidth: '200px'
                       },
@@ -490,6 +490,8 @@ export default function ChatWindow() {
                         display: 'flex',
                         alignItems: 'center',
                         gap: 2,
+                        width: '100%',
+                        boxSizing: 'border-box',
                         '&:hover': {
                           backgroundColor: theme => alpha(theme.palette.action.hover, 0.1)
                         }
@@ -699,6 +701,7 @@ export default function ChatWindow() {
                         textAlign: 'left',
                         pl: 0.5,
                         pr: 1.5,
+                        width: '100%',
                         color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
                         fontFamily: '"Space Mono", monospace'
                       }}
@@ -710,16 +713,24 @@ export default function ChatWindow() {
                     anchorEl={homeKnowledgeButtonRef.current}
                     open={homeKnowledgeMenuOpen}
                     onClose={() => setHomeKnowledgeMenuOpen(false)}
-                    anchorOrigin={{ vertical: "top", horizontal: "left" }}
-                    transformOrigin={{ vertical: "bottom", horizontal: "left" }}
+                    anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+                    transformOrigin={{ vertical: "top", horizontal: "left" }}
                     sx={{ 
                       '& .MuiPaper-root': {
                         borderRadius: 2,
-                        backgroundColor: theme => alpha(theme.palette.background.paper, 0.9),
-                        backdropFilter: 'blur(8px)',
-                        boxShadow: '0 8px 16px rgba(0,0,0,0.1)',
+                        backgroundColor: theme => alpha(theme.palette.background.paper, 0.75),
+                        backdropFilter: 'blur(10px)',
+                        boxShadow: '0 8px 16px rgba(0,0,0,0.08)',
                         overflow: 'hidden',
-                        minWidth: '220px'
+                        minWidth: '220px',
+                        width: '240px',
+                        height: 'auto',
+                        maxHeight: '320px',
+                        display: 'flex',
+                        flexDirection: 'column'
+                      },
+                      '& .MuiList-root': {
+                        padding: 0
                       },
                       '& .MuiMenuItem-root': {
                         fontFamily: '"Space Mono", monospace',
@@ -727,6 +738,8 @@ export default function ChatWindow() {
                         display: 'flex',
                         alignItems: 'center',
                         gap: 2,
+                        width: '100%',
+                        boxSizing: 'border-box',
                         '&:hover': {
                           backgroundColor: theme => alpha(theme.palette.action.hover, 0.1)
                         }
@@ -738,34 +751,35 @@ export default function ChatWindow() {
                         }
                       }
                     }}
+                    PaperProps={{
+                      style: { 
+                        maxHeight: '320px'
+                      }
+                    }}
                   >
-                    <MenuItem
-                      onClick={() => {
-                        setSelectedLibraries([]);
-                        setHomeKnowledgeMenuOpen(false);
-                      }}
-                    >
-                      <Box sx={{ 
-                        width: 24, 
-                        height: 24, 
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: theme => theme.palette.text.secondary
-                      }}>
-                        <BlockIcon fontSize="small" />
-                      </Box>
-                      <Typography sx={{ flex: 1 }}>No Knowledge Base</Typography>
-                      {selectedLibraries.length === 0 && (
-                        <CheckIcon fontSize="small" sx={{ color: 'success.main' }} />
-                      )}
-                    </MenuItem>
-                    {allLibraries.map((lib) => (
+                    {/* Scrollable section with all knowledge base options */}
+                    <Box sx={{ 
+                      overflowY: 'auto', 
+                      height: '250px', 
+                      flex: '1 0 auto',
+                      '&::-webkit-scrollbar': {
+                        width: '4px',
+                      },
+                      '&::-webkit-scrollbar-track': {
+                        background: 'transparent',
+                      },
+                      '&::-webkit-scrollbar-thumb': {
+                        background: theme => alpha(theme.palette.text.secondary, 0.15),
+                        borderRadius: '4px',
+                      },
+                      '&::-webkit-scrollbar-thumb:hover': {
+                        background: theme => alpha(theme.palette.text.secondary, 0.25),
+                      }
+                    }}>
                       <MenuItem
-                        key={lib.id}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleLibrarySelection(lib.id);
+                        onClick={() => {
+                          setSelectedLibraries([]);
+                          setHomeKnowledgeMenuOpen(false);
                         }}
                       >
                         <Box sx={{ 
@@ -774,37 +788,82 @@ export default function ChatWindow() {
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          color: theme => alpha(theme.palette.primary.main, 0.8)
+                          color: theme => alpha(theme.palette.text.secondary, 0.7)
                         }}>
-                          <FolderOutlinedIcon fontSize="small" />
+                          <BlockIcon fontSize="small" />
                         </Box>
-                        <Box sx={{ flex: 1, overflow: 'hidden' }}>
-                          <Typography noWrap sx={{ display: 'block' }}>
-                            {lib.name}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                            {getDocumentCount(lib.id)} files
-                          </Typography>
-                        </Box>
-                        {selectedLibraries.includes(lib.id) && (
+                        <Typography noWrap sx={{ flex: 1, opacity: 0.8, width: '170px' }}>No Knowledge Base</Typography>
+                        {selectedLibraries.length === 0 && (
                           <CheckIcon fontSize="small" sx={{ color: 'success.main' }} />
                         )}
                       </MenuItem>
-                    ))}
+
+                      {allLibraries.map((lib) => (
+                        <MenuItem
+                          key={lib.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleLibrarySelection(lib.id);
+                          }}
+                        >
+                          <Box sx={{ 
+                            width: 24, 
+                            height: 24, 
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.65)' : 'rgba(0, 0, 0, 0.55)'
+                          }}>
+                            <FolderOutlinedIcon fontSize="small" />
+                          </Box>
+                          <Box sx={{ flex: 1, overflow: 'hidden' }}>
+                            <Typography noWrap sx={{ display: 'block', width: '170px' }}>
+                              {lib.name}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                              {getDocumentCount(lib.id)} files
+                            </Typography>
+                          </Box>
+                          {selectedLibraries.includes(lib.id) && (
+                            <CheckIcon fontSize="small" sx={{ color: 'success.main' }} />
+                          )}
+                        </MenuItem>
+                      ))}
+                    </Box>
+
+                    {/* Fixed footer - Confirm button */}
                     <Box
-                      sx={{ p: 1, display: "flex", justifyContent: "flex-end" }}
+                      sx={{ 
+                        p: 1, 
+                        display: "flex", 
+                        justifyContent: "flex-end", 
+                        position: 'relative',
+                        backgroundColor: 'inherit',
+                        backdropFilter: 'inherit',
+                        width: '100%',
+                        boxSizing: 'border-box',
+                        zIndex: 1,
+                        height: '50px',
+                        flex: '0 0 auto'
+                      }}
                     >
                       <Button
                         variant="contained"
                         size="small"
                         onClick={() => setHomeKnowledgeMenuOpen(false)}
                         sx={{ 
-                          mt: 1,
                           fontFamily: '"Space Mono", monospace',
                           textTransform: 'none',
-                          backgroundColor: theme => alpha(theme.palette.primary.main, 0.8),
+                          backgroundColor: theme => alpha(theme.palette.primary.main, 0.6),
+                          height: '32px',
+                          minWidth: '80px',
+                          alignSelf: 'center',
+                          position: 'absolute',
+                          right: '12px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
                           '&:hover': {
-                            backgroundColor: theme => alpha(theme.palette.primary.main, 0.9),
+                            backgroundColor: theme => alpha(theme.palette.primary.main, 0.75),
                           }
                         }}
                       >
@@ -978,14 +1037,14 @@ export default function ChatWindow() {
                   anchorEl={modelButtonRef.current}
                   open={modelMenuOpen}
                   onClose={() => setModelMenuOpen(false)}
-                  anchorOrigin={{ vertical: "top", horizontal: "left" }}
-                  transformOrigin={{ vertical: "bottom", horizontal: "left" }}
+                  anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+                  transformOrigin={{ vertical: "top", horizontal: "left" }}
                   sx={{ 
                     '& .MuiPaper-root': {
                       borderRadius: 2,
-                      backgroundColor: theme => alpha(theme.palette.background.paper, 0.9),
-                      backdropFilter: 'blur(8px)',
-                      boxShadow: '0 8px 16px rgba(0,0,0,0.1)',
+                      backgroundColor: theme => alpha(theme.palette.background.paper, 0.75),
+                      backdropFilter: 'blur(10px)',
+                      boxShadow: '0 8px 16px rgba(0,0,0,0.08)',
                       overflow: 'hidden',
                       minWidth: '200px'
                     },
@@ -995,6 +1054,8 @@ export default function ChatWindow() {
                       display: 'flex',
                       alignItems: 'center',
                       gap: 2,
+                      width: '100%',
+                      boxSizing: 'border-box',
                       '&:hover': {
                         backgroundColor: theme => alpha(theme.palette.action.hover, 0.1)
                       }
@@ -1163,16 +1224,24 @@ export default function ChatWindow() {
                   anchorEl={knowledgeButtonRef.current}
                   open={knowledgeMenuOpen}
                   onClose={() => setKnowledgeMenuOpen(false)}
-                  anchorOrigin={{ vertical: "top", horizontal: "left" }}
-                  transformOrigin={{ vertical: "bottom", horizontal: "left" }}
+                  anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+                  transformOrigin={{ vertical: "top", horizontal: "left" }}
                   sx={{
                     '& .MuiPaper-root': {
                       borderRadius: 2,
-                      backgroundColor: theme => alpha(theme.palette.background.paper, 0.9),
-                      backdropFilter: 'blur(8px)',
-                      boxShadow: '0 8px 16px rgba(0,0,0,0.1)',
+                      backgroundColor: theme => alpha(theme.palette.background.paper, 0.75),
+                      backdropFilter: 'blur(10px)',
+                      boxShadow: '0 8px 16px rgba(0,0,0,0.08)',
                       overflow: 'hidden',
-                      minWidth: '220px'
+                      minWidth: '220px',
+                      width: '240px',
+                      height: 'auto',
+                      maxHeight: '320px',
+                      display: 'flex',
+                      flexDirection: 'column'
+                    },
+                    '& .MuiList-root': {
+                      padding: 0
                     },
                     '& .MuiMenuItem-root': {
                       fontFamily: '"Space Mono", monospace',
@@ -1180,6 +1249,8 @@ export default function ChatWindow() {
                       display: 'flex',
                       alignItems: 'center',
                       gap: 2,
+                      width: '100%',
+                      boxSizing: 'border-box',
                       '&:hover': {
                         backgroundColor: theme => alpha(theme.palette.action.hover, 0.1)
                       }
@@ -1192,39 +1263,35 @@ export default function ChatWindow() {
                     }
                   }}
                 >
-                  <MenuItem
-                    onClick={() => {
-                      if (activeConversation) {
-                        setSelectedLibraries([]);
-                        // 更新并保存知识库选择
-                        updateConversationLibraries(activeConversation.id, []);
-                      } else {
-                        setSelectedLibraries([]);
-                      }
-                      setKnowledgeMenuOpen(false);
-                    }}
-                  >
-                    <Box sx={{ 
-                      width: 24, 
-                      height: 24, 
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: theme => theme.palette.text.secondary
-                    }}>
-                      <BlockIcon fontSize="small" />
-                    </Box>
-                    <Typography sx={{ flex: 1 }}>No Knowledge Base</Typography>
-                    {selectedLibraries.length === 0 && (
-                      <CheckIcon fontSize="small" sx={{ color: 'success.main' }} />
-                    )}
-                  </MenuItem>
-                  {allLibraries.map((lib) => (
+                  {/* Scrollable section with all knowledge base options */}
+                  <Box sx={{ 
+                    overflowY: 'auto', 
+                    height: '250px', 
+                    flex: '1 0 auto',
+                    '&::-webkit-scrollbar': {
+                      width: '4px',
+                    },
+                    '&::-webkit-scrollbar-track': {
+                      background: 'transparent',
+                    },
+                    '&::-webkit-scrollbar-thumb': {
+                      background: theme => alpha(theme.palette.text.secondary, 0.15),
+                      borderRadius: '4px',
+                    },
+                    '&::-webkit-scrollbar-thumb:hover': {
+                      background: theme => alpha(theme.palette.text.secondary, 0.25),
+                    }
+                  }}>
                     <MenuItem
-                      key={lib.id}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleLibrarySelection(lib.id);
+                      onClick={() => {
+                        if (activeConversation) {
+                          setSelectedLibraries([]);
+                          // 更新并保存知识库选择
+                          updateConversationLibraries(activeConversation.id, []);
+                        } else {
+                          setSelectedLibraries([]);
+                        }
+                        setKnowledgeMenuOpen(false);
                       }}
                     >
                       <Box sx={{ 
@@ -1233,37 +1300,82 @@ export default function ChatWindow() {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        color: theme => alpha(theme.palette.primary.main, 0.8)
+                        color: theme => alpha(theme.palette.text.secondary, 0.7)
                       }}>
-                        <FolderOutlinedIcon fontSize="small" />
+                        <BlockIcon fontSize="small" />
                       </Box>
-                      <Box sx={{ flex: 1, overflow: 'hidden' }}>
-                        <Typography noWrap sx={{ display: 'block' }}>
-                          {lib.name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                          {getDocumentCount(lib.id)} files
-                        </Typography>
-                      </Box>
-                      {selectedLibraries.includes(lib.id) && (
+                      <Typography noWrap sx={{ flex: 1, opacity: 0.8, width: '170px' }}>No Knowledge Base</Typography>
+                      {selectedLibraries.length === 0 && (
                         <CheckIcon fontSize="small" sx={{ color: 'success.main' }} />
                       )}
                     </MenuItem>
-                  ))}
+
+                    {allLibraries.map((lib) => (
+                      <MenuItem
+                        key={lib.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleLibrarySelection(lib.id);
+                        }}
+                      >
+                        <Box sx={{ 
+                          width: 24, 
+                          height: 24, 
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: theme => alpha(theme.palette.text.secondary, 0.7)
+                        }}>
+                          <FolderOutlinedIcon fontSize="small" />
+                        </Box>
+                        <Box sx={{ flex: 1, overflow: 'hidden' }}>
+                          <Typography noWrap sx={{ display: 'block', width: '170px' }}>
+                            {lib.name}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                            {getDocumentCount(lib.id)} files
+                          </Typography>
+                        </Box>
+                        {selectedLibraries.includes(lib.id) && (
+                          <CheckIcon fontSize="small" sx={{ color: 'success.main' }} />
+                        )}
+                      </MenuItem>
+                    ))}
+                  </Box>
+
+                  {/* Fixed footer - Confirm button */}
                   <Box
-                    sx={{ p: 1, display: "flex", justifyContent: "flex-end" }}
+                    sx={{ 
+                      p: 1, 
+                      display: "flex", 
+                      justifyContent: "flex-end", 
+                      position: 'relative',
+                      backgroundColor: 'inherit',
+                      backdropFilter: 'inherit',
+                      width: '100%',
+                      boxSizing: 'border-box',
+                      zIndex: 1,
+                      height: '50px',
+                      flex: '0 0 auto'
+                    }}
                   >
                     <Button
                       variant="contained"
                       size="small"
                       onClick={() => setKnowledgeMenuOpen(false)}
                       sx={{ 
-                        mt: 1,
                         fontFamily: '"Space Mono", monospace',
                         textTransform: 'none',
-                        backgroundColor: theme => alpha(theme.palette.primary.main, 0.8),
+                        backgroundColor: theme => alpha(theme.palette.primary.main, 0.6),
+                        height: '32px',
+                        minWidth: '80px',
+                        alignSelf: 'center',
+                        position: 'absolute',
+                        right: '12px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
                         '&:hover': {
-                          backgroundColor: theme => alpha(theme.palette.primary.main, 0.9),
+                          backgroundColor: theme => alpha(theme.palette.primary.main, 0.75),
                         }
                       }}
                     >
@@ -1379,7 +1491,7 @@ export default function ChatWindow() {
                 <CloseIcon />
               </IconButton>
             </Box>
-            <SourceViewer sources={currentSources} />
+            <SourceViewer sources={currentSources || []} />
           </Drawer>
         </Box>
       )}

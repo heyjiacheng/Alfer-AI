@@ -148,7 +148,8 @@ export default function LeftSidebar() {
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              width: '100%'
+              width: '100%',
+              mb: 0.25
             }}>
               <Button
                 fullWidth
@@ -156,6 +157,8 @@ export default function LeftSidebar() {
                 onClick={() => setModalOpen(true)}
                 sx={{ 
                   py: 0.5,
+                  mt: 0.5,
+                  mb: 0,
                   borderRadius: 2,
                   bgcolor: 'transparent',
                   color: 'text.primary',
@@ -185,7 +188,8 @@ export default function LeftSidebar() {
             </Box>
             
             <Divider sx={{ 
-              my: 0.75, 
+              mt: -0.25,
+              mb: 0.55,
               opacity: 0.6,
               bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'
             }} />
@@ -212,7 +216,8 @@ export default function LeftSidebar() {
 
           <Box sx={{ 
             p: 2, 
-            pt: 1,
+            pt: 0.5,
+            pb: 0.5,
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center'
@@ -223,6 +228,8 @@ export default function LeftSidebar() {
               onClick={createNewConversation}
               sx={{ 
                 py: 0.5,
+                mt: 0.5,
+                mb: 0.35,
                 borderRadius: 2,
                 bgcolor: 'transparent',
                 color: 'text.primary',
@@ -252,7 +259,8 @@ export default function LeftSidebar() {
           </Box>
           
           <Divider sx={{ 
-            my: 0.75, 
+            mt: 0.55,
+            mb: 0.75,
             opacity: 0.6,
             bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'
           }} />
