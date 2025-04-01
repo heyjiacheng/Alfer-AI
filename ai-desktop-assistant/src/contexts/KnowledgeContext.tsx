@@ -298,7 +298,10 @@ export function KnowledgeProvider({
     updateLibrary,
     removeDocumentFromLib,
     setActiveLib,
-    selectLibrary: (id: string | null) => setSelectedLibraryId(id),
+    selectLibrary: (id: string | null) => {
+      console.log(`KnowledgeContext: 设置选择的知识库从 ${selectedLibraryId} 到 ${id}`);
+      setSelectedLibraryId(id);
+    },
     updateFolder,
     deleteFolder
   }), [libraries, folders, activeLib, selectedLibraryId, documents]);

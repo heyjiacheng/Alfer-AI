@@ -45,7 +45,17 @@ export default function KnowledgeBase() {
 
   // 处理知识库点击
   const handleLibraryClick = useCallback((libId: string) => {
-    selectLibrary(libId === selectedLibraryId ? null : libId);
+    console.log("当前选中的知识库:", selectedLibraryId);
+    console.log("点击的知识库:", libId);
+    
+    // 如果点击的是已选中的知识库，则取消选择
+    if (libId === selectedLibraryId) {
+      console.log("取消选择知识库");
+      selectLibrary(null);
+    } else {
+      console.log("选择新的知识库:", libId);
+      selectLibrary(libId);
+    }
   }, [selectLibrary, selectedLibraryId]);
 
   // 使用useMemo缓存列表，避免重新渲染时的闪烁

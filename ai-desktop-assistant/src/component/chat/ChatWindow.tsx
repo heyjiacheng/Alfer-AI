@@ -102,11 +102,32 @@ export default function ChatWindow() {
     try {
       if (activeConversation) {
         updateConversationLibraries(activeConversation.id, selectedLibraries);
-        await sendMessage(
-          messageContent,
-          selectedLibraries,
-          selectedLibraries.length === 0
-        );
+        
+        // 更新发送消息逻辑 - 使用多知识库查询
+        let useDirect = selectedLibraries.length === 0;
+        
+        console.log("发送消息:", messageContent);
+        console.log("选择的知识库数量:", selectedLibraries.length);
+        console.log("选择的知识库:", selectedLibraries);
+        console.log("是否使用直接对话模式:", useDirect);
+        
+        if (selectedLibraries.length >= 1) {
+          // 使用多知识库查询API - 可以同时查询多个知识库
+          console.log("使用多知识库查询模式");
+          await sendMessage(
+            messageContent,
+            selectedLibraries,
+            false // 不使用直接对话模式
+          );
+        } else {
+          // 没有选择知识库，使用直接对话模式
+          console.log("没有选择知识库，使用直接对话模式");
+          await sendMessage(
+            messageContent,
+            [],
+            true
+          );
+        }
       } else {
         await createNewConversation(messageContent);
       }
@@ -206,11 +227,32 @@ export default function ChatWindow() {
       title: message.substring(0, 30),
     };
 
-    await sendMessage(
-      message,
-      selectedLibraries,
-      selectedLibraries.length === 0
-    );
+    // 与 handleSend 保持一致的处理逻辑
+    let useDirect = selectedLibraries.length === 0;
+    
+    console.log("创建新会话并发送消息:", message);
+    console.log("选择的知识库数量:", selectedLibraries.length);
+    console.log("选择的知识库:", selectedLibraries);
+    console.log("是否使用直接对话模式:", useDirect);
+    
+    // 使用与 handleSend 相同的逻辑
+    if (selectedLibraries.length >= 1) {
+      // 使用多知识库查询API - 可以同时查询多个知识库
+      console.log("使用多知识库查询模式");
+      await sendMessage(
+        message,
+        selectedLibraries,
+        false // 不使用直接对话模式
+      );
+    } else {
+      // 没有选择知识库，使用直接对话模式
+      console.log("没有选择知识库，使用直接对话模式");
+      await sendMessage(
+        message,
+        [],
+        true
+      );
+    }
 
     return newConversation.id;
   };
@@ -251,6 +293,17 @@ export default function ChatWindow() {
     console.log("ChatWindow接收到源信息数据:", sources);
     setCurrentSources(sources || []);
     setSourcesOpen(true);
+  };
+
+  const mockAIResponse = async (content: string, model: string) => {
+    await new Promise((resolve) => setTimeout(resolve, 10000));
+    const modelNames: { [key: string]: string } = {
+      "deepseek-r1": "DeepSeek R1",
+      "gpt-4": "ChatGPT-4",
+      "claude-2": "Claude 2",
+      gemini: "Google Gemini",
+    };
+    return `${modelNames[model]} 回复：${content} (模拟回复)`;
   };
 
   return (
@@ -619,9 +672,25 @@ export default function ChatWindow() {
                           size="small"
                           sx={{ p: 0.5, mr: 1 }}
                         />
-                        No Knowledge Base
+                        <Typography>直接对话</Typography>
+                        <Typography variant="caption" sx={{ ml: 1, color: 'text.secondary' }}>
+                          (不使用知识库)
+                        </Typography>
                       </Box>
                     </MenuItem>
+                    <Box sx={{ 
+                      px: 2, 
+                      py: 1, 
+                      borderBottom: '1px solid',
+                      borderColor: 'divider', 
+                      display: 'flex', 
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <Typography variant="caption" color="text.secondary">
+                        选择知识库 (可多选，将同时搜索所有选择的知识库)
+                      </Typography>
+                    </Box>
                     {allLibraries.map((lib) => (
                       <MenuItem
                         key={lib.id}
@@ -963,9 +1032,25 @@ export default function ChatWindow() {
                         size="small"
                         sx={{ p: 0.5, mr: 1 }}
                       />
-                      No Knowledge Base
+                      <Typography>直接对话</Typography>
+                      <Typography variant="caption" sx={{ ml: 1, color: 'text.secondary' }}>
+                        (不使用知识库)
+                      </Typography>
                     </Box>
                   </MenuItem>
+                  <Box sx={{ 
+                    px: 2, 
+                    py: 1, 
+                    borderBottom: '1px solid',
+                    borderColor: 'divider', 
+                    display: 'flex', 
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}>
+                    <Typography variant="caption" color="text.secondary">
+                      选择知识库 (可多选，将同时搜索所有选择的知识库)
+                    </Typography>
+                  </Box>
                   {allLibraries.map((lib) => (
                     <MenuItem
                       key={lib.id}
@@ -1139,7 +1224,7 @@ export default function ChatWindow() {
                 <CloseIcon />
               </IconButton>
             </Box>
-            <SourceViewer sources={currentSources} />
+            <SourceViewer sources={currentSources || []} />
           </Drawer>
         </Box>
       )}

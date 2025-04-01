@@ -304,6 +304,7 @@ def route_query():
             
         user_query = data.get('query')
         kb_id = data.get('knowledge_base_id')
+        kb_ids = data.get('knowledge_base_ids')  # 新参数：多个知识库ID
         conversation_id = data.get('conversation_id')
         
         if not user_query:
@@ -334,6 +335,44 @@ def route_query():
             except ValueError:
                 return jsonify({"error": "invalid knowledge base id"}), 400
         
+        # 验证多个知识库ID (如果提供)
+        valid_kb_ids = []
+        if kb_ids:
+            try:
+                # 确保kb_ids是一个列表
+                if not isinstance(kb_ids, list):
+                    return jsonify({"error": "knowledge_base_ids must be an array"}), 400
+                
+                conn = get_db_connection(DB_PATH)
+                cursor = conn.cursor()
+                
+                for id in kb_ids:
+                    try:
+                        kb_id_int = int(id)
+                        # 验证知识库是否存在
+                        cursor.execute("SELECT id FROM knowledge_bases WHERE id = ?", (kb_id_int,))
+                        if cursor.fetchone():
+                            # 检查是否有文档
+                            cursor.execute("SELECT COUNT(*) FROM documents WHERE knowledge_base_id = ?", (kb_id_int,))
+                            if cursor.fetchone()[0] > 0:
+                                valid_kb_ids.append(kb_id_int)
+                    except (ValueError, TypeError):
+                        # 跳过无效的ID
+                        continue
+                
+                conn.close()
+                
+                if len(valid_kb_ids) == 0 and len(kb_ids) > 0:
+                    return jsonify({
+                        "error": "no valid knowledge bases", 
+                        "detail": "None of the provided knowledge base IDs are valid or contain documents."
+                    }), 400
+                    
+                print(f"Valid knowledge base IDs: {valid_kb_ids}")
+                
+            except Exception as e:
+                return jsonify({"error": "error validating knowledge base ids", "detail": str(e)}), 400
+        
         # 验证对话ID (如果提供)
         if conversation_id is not None:
             try:
@@ -345,7 +384,16 @@ def route_query():
                 return jsonify({"error": "invalid conversation id"}), 400
         
         # 执行查询获取回答
-        response = perform_query(user_query, kb_id)
+        # 优先使用多知识库模式，其次是单知识库模式，最后是直接对话模式
+        if valid_kb_ids and len(valid_kb_ids) > 0:
+            print(f"使用多知识库查询模式，知识库IDs: {valid_kb_ids}")
+            response = perform_query(user_query, None, valid_kb_ids)
+        elif kb_id is not None:
+            print(f"使用单一知识库查询模式，知识库ID: {kb_id}")
+            response = perform_query(user_query, kb_id)
+        else:
+            print("使用直接对话模式")
+            response = perform_query(user_query)
         
         # 检查是否查询失败
         if response and "error" in response:
@@ -377,6 +425,60 @@ def route_query():
         import traceback
         traceback.print_exc()
         return jsonify({"error": f"error with query", "detail": str(e)}), 500
+
+@app.route('/chat', methods=['POST'])
+def route_direct_chat():
+    """直接与AI对话，不使用知识库"""
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({"error": "please provide a request body"}), 400
+            
+        user_query = data.get('query')
+        conversation_id = data.get('conversation_id')
+        
+        if not user_query:
+            return jsonify({"error": "please provide a query"}), 400
+            
+        # 验证对话ID (如果提供)
+        if conversation_id is not None:
+            try:
+                conversation_id = int(conversation_id)
+                conversation = get_conversation(DB_PATH, conversation_id)
+                if not conversation:
+                    return jsonify({"error": "conversation not found", "detail": f"Conversation ID {conversation_id} does not exist"}), 404
+            except ValueError:
+                return jsonify({"error": "invalid conversation id"}), 400
+        
+        # 直接调用perform_query但不提供kb_id，这会触发直接对话模式
+        response = perform_query(user_query)
+        
+        # 处理对话历史
+        if conversation_id:
+            try:
+                # 保存用户问题到对话历史
+                save_conversation_message(DB_PATH, conversation_id, 'user', user_query)
+                
+                # 保存AI回答到对话历史
+                sources_json = json.dumps(response.get('sources', [])) if response.get('sources') else None
+                save_conversation_message(DB_PATH, conversation_id, 'assistant', response.get('answer', ''), sources_json)
+                
+                # 添加会话ID到响应
+                response['conversation_id'] = conversation_id
+                
+            except Exception as e:
+                print(f"保存对话历史出错: {str(e)}")
+                # 添加警告但继续返回查询结果
+                response['warning'] = "Failed to save conversation history"
+        
+        # 确保响应可以正确序列化为JSON
+        return jsonify(response), 200
+    except Exception as e:
+        print(f"直接对话处理错误: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"error with chat", "detail": str(e)}), 500
 
 # 添加一个新的路由，简化文档上传
 @app.route('/upload/<int:kb_id>', methods=['POST'])

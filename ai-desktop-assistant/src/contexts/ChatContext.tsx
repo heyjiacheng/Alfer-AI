@@ -40,7 +40,7 @@ interface Conversation {
   messageCount: number;
 }
 
-interface ChatContextType {
+export interface ChatContextType {
   conversations: Conversation[];
   activeConversation: Conversation | null;
   isLoading: boolean;
@@ -49,7 +49,8 @@ interface ChatContextType {
   sendMessage: (
     content: string,
     selectedLibraries: string[],
-    useDirect: boolean
+    useDirect: boolean,
+    knowledgeBaseIds?: string[]
   ) => Promise<void>;
   addFiles: (files: UploadedFile[]) => void;
   removeFile: (fileId: string) => void;
@@ -75,7 +76,7 @@ export function ChatProvider({ children }: Readonly<{ children: ReactNode }>) {
   });
   
   // 使用 localStorage 初始化知识库择
-  const [selectedLibrary, setSelectedLibraryState] = useState(() => {
+  const [selectedLibrary, setSelectedLibraryState] = useState<string>(() => {
     const savedLibrary = localStorage.getItem('selectedLibrary');
     return savedLibrary || '';
   });
@@ -92,10 +93,8 @@ export function ChatProvider({ children }: Readonly<{ children: ReactNode }>) {
 
   // 当知识库选择改变时保存到 localStorage
   useEffect(() => {
-    const validModels = ["deepseek-r1", "gpt-4", "claude-2", "gemini", ""];
-    if (validModels.includes(selectedLibrary)) {
-      localStorage.setItem("selectedLibrary", selectedLibrary);
-    }
+    localStorage.setItem("selectedLibrary", selectedLibrary || '');
+    console.log("知识库选择已更新:", selectedLibrary);
   }, [selectedLibrary]);
 
   // 加载现有对话
@@ -367,7 +366,8 @@ export function ChatProvider({ children }: Readonly<{ children: ReactNode }>) {
   const sendMessage = async (
     content: string,
     selectedLibraries: string[] = [],
-    useDirect: boolean = false // 新增参数，是否直接与Ollama对话
+    useDirect: boolean = false, // 新增参数，是否直接与Ollama对话
+    knowledgeBaseIds?: string[] // 新增参数：指定多个知识库ID
   ) => {
     if (!content.trim()) return;
 
@@ -384,13 +384,6 @@ export function ChatProvider({ children }: Readonly<{ children: ReactNode }>) {
 
       let currentConversation = activeConversation;
       let conversationId: string;
-
-      // 保存当前选择的知识库
-      if (selectedLibraries.length > 0) {
-        // Don't set the AI model to the selected knowledge base ID
-        // localStorage.setItem("selectedLibrary", selectedLibraries[0]);
-        // setSelectedLibrary(selectedLibraries[0]);
-      }
 
       // 如果没有活动对话，创建一个新的
       if (!currentConversation) {
@@ -507,15 +500,26 @@ export function ChatProvider({ children }: Readonly<{ children: ReactNode }>) {
           // 直接与Ollama对话
           console.log("使用直接对话模式");
           response = await queryApi.chat(content, conversationId);
+        } else if (selectedLibraries.length > 1) {
+          // 多知识库查询模式
+          console.log("使用多知识库查询模式，知识库IDs:", selectedLibraries);
+          response = await queryApi.query(
+            content,
+            undefined,
+            conversationId,
+            selectedLibraries // 传递所有选择的知识库
+          );
         } else if (selectedLibraries.length === 1) {
           // 查询单一知识库
+          console.log("使用单一知识库查询模式", selectedLibraries[0]);
           response = await queryApi.query(
             content,
             selectedLibraries[0],
             conversationId
           );
         } else {
-          // 查询所有知识库
+          // 未选择知识库，使用直接对话模式
+          console.log("未选择知识库，使用直接对话模式");
           response = await queryApi.query(content, undefined, conversationId);
         }
 
@@ -754,12 +758,11 @@ export function ChatProvider({ children }: Readonly<{ children: ReactNode }>) {
 
   // Wrapped setter to validate model values
   const setSelectedLibrary = (libraryId: string) => {
-    const validModels = ["deepseek-r1", "gpt-4", "claude-2", "gemini", ""];
-    if (validModels.includes(libraryId)) {
-      setSelectedLibraryState(libraryId);
-    } else {
-      console.warn(`Invalid model: ${libraryId}. Must be one of: ${validModels.join(', ')}`);
-    }
+    console.log("设置选择的知识库为:", libraryId);
+    // 存储到 localStorage
+    localStorage.setItem("selectedLibrary", libraryId || '');
+    // 更新状态
+    setSelectedLibraryState(libraryId);
   };
 
   // Update context value

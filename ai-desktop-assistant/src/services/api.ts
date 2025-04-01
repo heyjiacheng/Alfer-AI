@@ -180,22 +180,36 @@ export const documentApi = {
 
 // 查询API
 export const queryApi = {
-  // 查询知识库
+  // 查询知识库或直接对话
   query: async (
     query: string,
     knowledgeBaseId?: string,
-    conversationId?: string
+    conversationId?: string,
+    knowledgeBaseIds?: string[]
   ) => {
     try {
       const payload: any = { query };
 
-      if (knowledgeBaseId) {
-        payload.knowledge_base_id = knowledgeBaseId;
-      }
-
       if (conversationId) {
         payload.conversation_id = conversationId;
       }
+
+      // 处理知识库参数，优先使用多知识库ID列表
+      if (knowledgeBaseIds && knowledgeBaseIds.length > 0) {
+        // 使用多知识库模式
+        payload.knowledge_base_ids = knowledgeBaseIds;
+        console.log(`查询多个知识库: ${knowledgeBaseIds}`);
+      } else if (knowledgeBaseId) {
+        // 使用单一知识库模式
+        payload.knowledge_base_id = knowledgeBaseId;
+        console.log(`查询知识库: ${knowledgeBaseId}`);
+      } else {
+        // 使用直接对话模式
+        console.log("使用直接对话模式");
+      }
+
+      console.log(`使用API端点: ${API_BASE_URL}/query`);
+      console.log("发送数据:", payload);
 
       const response = await fetch(`${API_BASE_URL}/query`, {
         method: "POST",
@@ -203,30 +217,26 @@ export const queryApi = {
         body: JSON.stringify(payload),
       });
 
-      if (!response.ok) throw new Error(`HTTP error ${response.status}`);
-      return response.json();
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`API错误 (${response.status}): ${errorText}`);
+        throw new Error(`HTTP error ${response.status}: ${errorText}`);
+      }
+      
+      const result = await response.json();
+      console.log("API响应:", result);
+      return result;
     } catch (error) {
       return handleApiError(error);
     }
   },
 
-  // 直接与Ollama模型对话
+  // 直接使用chat端点与AI对话
   chat: async (query: string, conversationId?: string) => {
     try {
-      const payload: any = { query };
-
-      if (conversationId) {
-        payload.conversation_id = conversationId;
-      }
-
-      const response = await fetch(`${API_BASE_URL}/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) throw new Error(`HTTP error ${response.status}`);
-      return response.json();
+      console.log("直接使用chat端点");
+      // 使用显式引用而不是this
+      return queryApi.query(query, undefined, conversationId);
     } catch (error) {
       return handleApiError(error);
     }

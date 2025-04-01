@@ -1,9 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import { Box, Typography, Paper, List, ListItem, Divider, Card, CardContent, Chip, Button, Alert } from '@mui/material';
+import React, { useEffect, useState, useMemo } from 'react';
+import { Box, Typography, Paper, List, ListItem, Divider, Card, CardContent, Chip, Button, Alert, IconButton } from '@mui/material';
 import { ChatMessage } from '../../contexts/ChatContext';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import PDFViewer from '../document/PDFViewer';
 import { documentApi } from '../../services/api';
+import { useTheme } from '@mui/material/styles';
+import { useKnowledge } from '../../contexts/KnowledgeContext';
+import ExpandLess from '@mui/icons-material/ExpandLess';
+import ExpandMore from '@mui/icons-material/ExpandMore';
+import { alpha } from '@mui/material/styles';
 
 interface Source {
   document_name: string;
@@ -14,6 +19,7 @@ interface Source {
   relevance_score?: number;
   metadata?: any;
   document_id?: string;
+  knowledge_base_id?: number | string;
 }
 
 interface SourceViewerProps {
@@ -27,6 +33,8 @@ export default function SourceViewer({ sources }: SourceViewerProps) {
     page?: number;
     chunkText?: string;
   } | null>(null);
+
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     console.log("SourceViewer接收到源信息:", sources);
@@ -273,6 +281,13 @@ export default function SourceViewer({ sources }: SourceViewerProps) {
                       <Chip 
                         size="small" 
                         label={`总页数: ${source.metadata.total_pages}`} 
+                        variant="outlined" 
+                      />
+                    )}
+                    {source?.knowledge_base_id && (
+                      <Chip 
+                        size="small" 
+                        label={`Knowledge Base: ${source.knowledge_base_id}`}
                         variant="outlined" 
                       />
                     )}

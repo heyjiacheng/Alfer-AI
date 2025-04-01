@@ -295,13 +295,14 @@ def rerank_documents(query: str, docs: List[Document]) -> List[Document]:
         print(f"重新排序文档时出错: {str(e)}")
         return docs  # 出错时返回原始文档顺序
 
-def perform_query(input_query: str, kb_id: Optional[int] = None) -> Optional[Dict[str, Any]]:
+def perform_query(input_query: str, kb_id: Optional[int] = None, kb_ids: Optional[List[int]] = None) -> Optional[Dict[str, Any]]:
     """
     执行查询并返回回答与来源
     
     参数:
         input_query: 用户输入的查询
-        kb_id: 知识库ID (可选)
+        kb_id: 知识库ID (可选，单个知识库查询)
+        kb_ids: 知识库ID列表 (可选，多个知识库查询)
         
     返回:
         Dict[str, Any]: 包含回答和源信息的响应对象，失败时返回带有错误信息的字典
@@ -317,15 +318,6 @@ def perform_query(input_query: str, kb_id: Optional[int] = None) -> Optional[Dic
         
         print(f"使用语言模型: {model_name}")
         print(f"使用嵌入模型: {embedding_model_name}")
-        
-        # 验证知识库ID (如果提供)
-        if kb_id is not None:
-            from db_utils import check_knowledge_base_exists
-            if not check_knowledge_base_exists(DB_PATH, kb_id):
-                return {
-                    "error": "知识库不存在",
-                    "detail": f"ID为{kb_id}的知识库不存在"
-                }
         
         # 初始化语言模型
         try:
@@ -351,22 +343,36 @@ def perform_query(input_query: str, kb_id: Optional[int] = None) -> Optional[Dic
                     "error": "无法初始化语言模型",
                     "detail": f"原始错误: {str(model_error)}, 回退错误: {str(fallback_error)}"
                 }
+                
+        # 如果提供了kb_ids，使用多知识库查询模式
+        if kb_ids and len(kb_ids) > 0:
+            print(f"使用多知识库查询模式，知识库IDs: {kb_ids}")
+            return query_multiple_knowledge_bases(input_query, kb_ids, llm)
+                
+        # 如果没有提供知识库ID，直接使用AI回答
+        if kb_id is None and (not kb_ids or len(kb_ids) == 0):
+            print("未提供知识库ID，使用直接对话模式")
+            return direct_ai_chat(input_query, llm)
+        
+        # 验证知识库ID (如果提供)
+        if kb_id is not None:
+            from db_utils import check_knowledge_base_exists
+            if not check_knowledge_base_exists(DB_PATH, kb_id):
+                return {
+                    "error": "知识库不存在",
+                    "detail": f"ID为{kb_id}的知识库不存在"
+                }
         
         # 获取向量数据库实例
         try:
             db = get_vector_db(kb_id)
             # 检查向量数据库是否为空
             if hasattr(db, '_collection') and db._collection.count() == 0:
-                return {
-                    "error": "知识库为空",
-                    "detail": f"知识库 {kb_id if kb_id else '默认'} 中没有文档，请先上传文档"
-                }
+                print(f"知识库 {kb_id} 为空，切换到直接对话模式")
+                return direct_ai_chat(input_query, llm, kb_id)
         except Exception as db_error:
-            print(f"获取向量数据库时出错: {str(db_error)}")
-            return {
-                "error": "无法访问向量数据库",
-                "detail": str(db_error)
-            }
+            print(f"获取向量数据库时出错: {str(db_error)}，切换到直接对话模式")
+            return direct_ai_chat(input_query, llm, kb_id)
         
         # 获取提示模板
         query_prompt, answer_prompt = get_prompt()
@@ -379,31 +385,19 @@ def perform_query(input_query: str, kb_id: Optional[int] = None) -> Optional[Dic
                 prompt=query_prompt
             )
         except Exception as retriever_error:
-            print(f"创建检索器时出错: {str(retriever_error)}")
-            return {
-                "error": "无法创建文档检索器",
-                "detail": str(retriever_error)
-            }
+            print(f"创建检索器时出错: {str(retriever_error)}，切换到直接对话模式")
+            return direct_ai_chat(input_query, llm, kb_id)
         
         # 执行检索以获取相关文档
         try:
             retrieved_docs = retriever.get_relevant_documents(input_query)
         except Exception as retrieve_error:
-            print(f"检索文档时出错: {str(retrieve_error)}")
-            return {
-                "error": "文档检索失败",
-                "detail": str(retrieve_error)
-            }
+            print(f"检索文档时出错: {str(retrieve_error)}，切换到直接对话模式")
+            return direct_ai_chat(input_query, llm, kb_id)
         
         if not retrieved_docs:
-            return {
-                "answer": "抱歉，没有找到相关的信息来回答您的问题。",
-                "sources": [],
-                "query": {
-                    "original": input_query,
-                    "kb_id": kb_id
-                }
-            }
+            print("没有找到相关文档，切换到直接对话模式")
+            return direct_ai_chat(input_query, llm, kb_id)
         
         # 重新排序文档以提高相关性
         reranked_docs = rerank_documents(input_query, retrieved_docs)
@@ -497,5 +491,203 @@ def perform_query(input_query: str, kb_id: Optional[int] = None) -> Optional[Dic
         traceback.print_exc()
         return {
             "error": "查询执行失败",
+            "detail": str(e)
+        }
+
+def query_multiple_knowledge_bases(input_query: str, kb_ids: List[int], llm) -> Dict[str, Any]:
+    """
+    查询多个知识库并合并结果
+    
+    参数:
+        input_query: 用户输入的查询
+        kb_ids: 知识库ID列表
+        llm: 语言模型实例
+        
+    返回:
+        Dict[str, Any]: 包含回答和合并的源信息的响应对象
+    """
+    try:
+        print(f"开始查询多个知识库: {kb_ids}")
+        
+        # 获取提示模板
+        query_prompt, answer_prompt = get_prompt()
+        
+        # 存储所有知识库的相关文档
+        all_sources = []
+        all_docs = []
+        
+        # 获取嵌入模型
+        embedding_model_name = os.getenv('TEXT_EMBEDDING_MODEL', 'nomic-embed-text')
+        from langchain_community.embeddings import OllamaEmbeddings
+        embedding_model = OllamaEmbeddings(model=embedding_model_name)
+        
+        # 查询每个知识库
+        for kb_id in kb_ids:
+            try:
+                print(f"查询知识库 {kb_id}")
+                
+                # 验证知识库是否存在
+                from db_utils import check_knowledge_base_exists
+                if not check_knowledge_base_exists(DB_PATH, kb_id):
+                    print(f"知识库 {kb_id} 不存在，跳过")
+                    continue
+                
+                # 获取向量数据库实例
+                db = get_vector_db(kb_id)
+                
+                # 检查向量数据库是否为空
+                if hasattr(db, '_collection') and db._collection.count() == 0:
+                    print(f"知识库 {kb_id} 为空，跳过")
+                    continue
+                
+                # 设置多重查询检索器
+                try:
+                    retriever = MultiQueryRetriever.from_llm(
+                        retriever=db.as_retriever(search_kwargs={"k": 5}),  # 每个知识库获取少一些文档
+                        llm=llm,
+                        prompt=query_prompt
+                    )
+                    
+                    # 执行检索以获取相关文档
+                    docs = retriever.get_relevant_documents(input_query)
+                    
+                    if docs:
+                        # 重新排序文档以提高相关性
+                        reranked_docs = rerank_documents(input_query, docs)
+                        
+                        # 只保留最相关的前3个文档，避免太多文档
+                        top_docs = reranked_docs[:3]
+                        
+                        # 计算嵌入向量
+                        query_embedding = embedding_model.embed_query(input_query)
+                        doc_embeddings = [embedding_model.embed_query(doc.page_content) for doc in top_docs]
+                        
+                        # 格式化源信息
+                        sources = format_sources(top_docs, query_embedding, doc_embeddings)
+                        
+                        # 过滤掉相关度分数低于65的文档 (多知识库查询时稍微降低阈值)
+                        relevant_sources = [s for s in sources if s.get("relevance_score", 0) >= 65]
+                        
+                        if relevant_sources:
+                            # 添加知识库ID到源信息
+                            for source in relevant_sources:
+                                source["knowledge_base_id"] = kb_id
+                            
+                            # 将相关文档和源信息添加到总列表
+                            all_sources.extend(relevant_sources)
+                            all_docs.extend(top_docs)
+                            
+                            print(f"从知识库 {kb_id} 找到 {len(relevant_sources)} 个相关源")
+                        else:
+                            print(f"知识库 {kb_id} 未找到高相关度文档")
+                    else:
+                        print(f"知识库 {kb_id} 未找到相关文档")
+                except Exception as e:
+                    print(f"查询知识库 {kb_id} 时出错: {str(e)}")
+                    continue
+            except Exception as e:
+                print(f"处理知识库 {kb_id} 时出错: {str(e)}")
+                continue
+        
+        # 如果没有找到任何相关源，使用直接对话模式
+        if not all_sources:
+            print("所有知识库中都没有找到相关信息，使用直接对话模式")
+            return direct_ai_chat(input_query, llm)
+        
+        # 按相关度分数对所有源排序
+        all_sources.sort(key=lambda x: x.get("relevance_score", 0), reverse=True)
+        
+        # 限制最多使用10个源，避免上下文过长
+        top_sources = all_sources[:10]
+        
+        # 使用高相关度文档作为上下文
+        context = "\n\n".join([s["content"] for s in top_sources])
+        
+        # 生成回答
+        try:
+            # 使用多知识库模板
+            multi_kb_prompt = ChatPromptTemplate.from_template("""You are an AI assistant from a sweden company named Alfer-AI. 
+            Your task is to answer the question based on the context provided from multiple knowledge bases.
+            Synthesize information from all relevant sources to provide a comprehensive answer.
+            Make sure to consider information from all knowledge bases.
+            
+            Context:
+            {context}
+            
+            Question: {question}
+            
+            Please provide a clear, professional answer with the language of the question:
+            """)
+            
+            formatted_prompt = multi_kb_prompt.format(context=context, question=input_query)
+            raw_answer = llm.invoke(formatted_prompt).content
+            clean_answer = clean_llm_response(raw_answer)
+            
+            # 组装最终响应
+            response = {
+                "answer": clean_answer,
+                "sources": top_sources,
+                "query": {
+                    "original": input_query,
+                    "kb_ids": kb_ids
+                },
+                "is_multi_kb_query": True
+            }
+            
+            return response
+        except Exception as llm_error:
+            print(f"生成多知识库回答时出错: {str(llm_error)}")
+            return {
+                "error": "无法生成回答",
+                "detail": str(llm_error)
+            }
+    except Exception as e:
+        print(f"多知识库查询出错: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return direct_ai_chat(input_query, llm)
+
+def direct_ai_chat(input_query: str, llm, kb_id=None):
+    """
+    直接使用AI进行对话，不使用知识库
+    
+    参数:
+        input_query: 用户输入的查询
+        llm: 语言模型实例
+        kb_id: 知识库ID (可选，仅用于记录)
+        
+    返回:
+        Dict[str, Any]: 包含回答的响应对象
+    """
+    try:
+        # 使用简单提示模板进行直接对话
+        direct_prompt = ChatPromptTemplate.from_template("""You are an AI assistant from a sweden company named Alfer-AI. 
+        Your task is to answer the question based on your knowledge.
+        If you don't know the answer, just say you don't have enough information.
+        
+        Question: {question}
+        
+        Please provide a clear, professional answer with the language of the question:
+        """)
+        
+        formatted_prompt = direct_prompt.format(question=input_query)
+        raw_answer = llm.invoke(formatted_prompt).content
+        clean_answer = clean_llm_response(raw_answer)
+        
+        response = {
+            "answer": clean_answer,
+            "sources": [],  # 没有知识库文档作为来源
+            "query": {
+                "original": input_query,
+                "kb_id": kb_id
+            },
+            "is_direct_chat": True  # 标记这是直接对话模式
+        }
+        
+        return response
+    except Exception as e:
+        print(f"直接对话模式出错: {str(e)}")
+        return {
+            "error": "生成回答失败",
             "detail": str(e)
         }
