@@ -235,7 +235,7 @@ export default React.memo(function MessageBubble({ message, isUser, onViewSource
         flexDirection: 'column',
         alignItems: isUser ? 'flex-end' : 'flex-start',
         width: '100%',
-        maxWidth: '650px' // 限制宽度，保持居中
+        maxWidth: isEditing ? '800px' : '650px' // 编辑状态下增加最大宽度
       }}>
         {isUser ? (
           // 用户消息 - 使用灰色背景框
@@ -243,7 +243,8 @@ export default React.memo(function MessageBubble({ message, isUser, onViewSource
             <Paper
               elevation={1}
               sx={{
-                maxWidth: isEditing ? '95%' : '80%',
+                maxWidth: isEditing ? '98%' : '80%',
+                width: isEditing ? '98%' : 'auto',
                 bgcolor: userBubbleBgColor, // 根据主题调整背景色
                 color: 'text.primary',
                 borderRadius: 3.5, // 更圆润的边角
@@ -284,7 +285,12 @@ export default React.memo(function MessageBubble({ message, isUser, onViewSource
                     size="small"
                     autoFocus
                     minRows={1}
-                    maxRows={3}
+                    maxRows={5}
+                    inputProps={{
+                      style: {
+                        width: '100%'
+                      }
+                    }}
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         borderRadius: 2,
@@ -309,9 +315,8 @@ export default React.memo(function MessageBubble({ message, isUser, onViewSource
                         maxHeight: '80px',
                         minHeight: '28px',
                         whiteSpace: 'pre-wrap',
-                        wordWrap: 'break-word',
-                        wordBreak: 'break-word',
-                        overflowWrap: 'break-word'
+                        overflowWrap: 'normal',
+                        wordBreak: 'normal'
                       },
                       width: '100%'
                     }}
