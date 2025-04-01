@@ -240,7 +240,7 @@ export function ChatProvider({ children }: Readonly<{ children: ReactNode }>) {
     try {
       setIsLoading(true);
       const response = await conversationApi.create({
-        title: "新对话",
+        title: "New Conversation",
       });
 
       if (!response || !response.conversation_id) {
@@ -249,7 +249,7 @@ export function ChatProvider({ children }: Readonly<{ children: ReactNode }>) {
 
       const newConversation: Conversation = {
         id: response.conversation_id.toString(),
-        title: "新对话",
+        title: "New Conversation",
         messages: [],
         files: [],
         messageCount: 0,

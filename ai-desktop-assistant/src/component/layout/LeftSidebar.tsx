@@ -174,9 +174,11 @@ export default function LeftSidebar() {
                 <Typography sx={{ 
                   fontFamily: '"Sora", sans-serif',
                   letterSpacing: '0.2px',
-                  fontSize: '0.85rem'
+                  fontSize: '0.85rem',
+                  textTransform: 'capitalize',
+                  fontWeight: 500
                 }}>
-                  New Knowledge Base
+                  New knowledge base
                 </Typography>
               </Button>
             </Box>
@@ -238,9 +240,11 @@ export default function LeftSidebar() {
               <Typography sx={{ 
                 fontFamily: '"Sora", sans-serif',
                 letterSpacing: '0.2px',
-                fontSize: '0.85rem'
+                fontSize: '0.85rem',
+                textTransform: 'capitalize',
+                fontWeight: 500
               }}>
-                New Conversation
+                New conversation
               </Typography>
             </Button>
           </Box>
