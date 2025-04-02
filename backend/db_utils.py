@@ -1,17 +1,17 @@
 import sqlite3
 
 def get_db_connection(db_path):
-    """创建数据库连接并设置row_factory为sqlite3.Row"""
+    """Create a database connection and set row_factory to sqlite3.Row"""
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     return conn
 
 def init_database(db_path):
-    """初始化数据库，创建必要的表和添加默认知识库"""
+    """Initialize database, create necessary tables and add default knowledge base"""
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     
-    # 创建知识库表
+    # Create knowledge base table
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS knowledge_bases (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -21,18 +21,18 @@ def init_database(db_path):
     )
     ''')
     
-    # 检查文档表中是否存在knowledge_base_id列和extraction_failed列
+    # Check if knowledge_base_id column and extraction_failed column exist in documents table
     cursor.execute("PRAGMA table_info(documents)")
     columns = [info[1] for info in cursor.fetchall()]
     
-    # 检查documents表是否存在
+    # Check if documents table exists
     table_exists = False
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='documents'")
     if cursor.fetchone():
         table_exists = True
     
     if not table_exists:
-        # 创建文档表
+        # Create documents table
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS documents (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -48,28 +48,28 @@ def init_database(db_path):
         )
         ''')
     else:
-        # 添加可能缺少的列
+        # Add possibly missing columns
         if 'knowledge_base_id' not in columns:
-            # 添加knowledge_base_id列
+            # Add knowledge_base_id column
             cursor.execute("ALTER TABLE documents ADD COLUMN knowledge_base_id INTEGER")
-            # 为现有文档设置默认知识库ID
+            # Set default knowledge base ID for existing documents
             cursor.execute("UPDATE documents SET knowledge_base_id = 1 WHERE knowledge_base_id IS NULL")
         
         if 'extraction_failed' not in columns:
-            # 添加extraction_failed列
+            # Add extraction_failed column
             cursor.execute("ALTER TABLE documents ADD COLUMN extraction_failed BOOLEAN DEFAULT 0")
     
-    # 如果没有知识库，添加默认知识库
+    # If no knowledge base exists, add default knowledge base
     # cursor.execute("SELECT COUNT(*) FROM knowledge_bases")
     # if cursor.fetchone()[0] == 0:
     #     cursor.execute("INSERT INTO knowledge_bases (name, description) VALUES (?, ?)",
-    #                  ("默认知识库", "系统默认知识库"))
+    #                  ("Default Knowledge Base", "System default knowledge base"))
     
     conn.commit()
     conn.close()
 
 def save_document_metadata(db_path, original_filename, stored_filename, file_path, file_size, kb_id=1, extraction_failed=False):
-    """保存文档元数据到数据库"""
+    """Save document metadata to database"""
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     cursor.execute(
@@ -82,7 +82,7 @@ def save_document_metadata(db_path, original_filename, stored_filename, file_pat
     return doc_id
 
 def check_knowledge_base_exists(db_path, kb_id):
-    """检查知识库是否存在"""
+    """Check if knowledge base exists"""
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     cursor.execute("SELECT id FROM knowledge_bases WHERE id = ?", (kb_id,))
@@ -92,28 +92,28 @@ def check_knowledge_base_exists(db_path, kb_id):
 
 def save_conversation_message(db_path, conversation_id, message_type, content, sources=None):
     """
-    保存对话消息到数据库
+    Save conversation message to database
     
-    参数:
-        db_path: 数据库路径
-        conversation_id: 对话ID
-        message_type: 消息类型 ('user' 或 'assistant')
-        content: 消息内容
-        sources: 引用的源信息 (JSON字符串)
+    Parameters:
+        db_path: Database path
+        conversation_id: Conversation ID
+        message_type: Message type ('user' or 'assistant')
+        content: Message content
+        sources: Referenced source information (JSON string)
         
-    返回:
-        int: 新消息的ID
+    Returns:
+        int: New message ID
     """
     conn = get_db_connection(db_path)
     cursor = conn.cursor()
     
-    # 保存消息
+    # Save message
     cursor.execute(
         "INSERT INTO conversation_messages (conversation_id, message_type, content, sources) VALUES (?, ?, ?, ?)",
         (conversation_id, message_type, content, sources)
     )
     
-    # 更新对话的更新时间
+    # Update conversation's update time
     cursor.execute(
         "UPDATE conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ?",
         (conversation_id,)
@@ -126,15 +126,15 @@ def save_conversation_message(db_path, conversation_id, message_type, content, s
 
 def create_conversation(db_path, title, kb_id=None):
     """
-    创建新的对话历史记录
+    Create new conversation history
     
-    参数:
-        db_path: 数据库路径
-        title: 对话标题
-        kb_id: 知识库ID (可选)
+    Parameters:
+        db_path: Database path
+        title: Conversation title
+        kb_id: Knowledge base ID (optional)
         
-    返回:
-        int: 新对话的ID
+    Returns:
+        int: New conversation ID
     """
     conn = get_db_connection(db_path)
     cursor = conn.cursor()
@@ -151,19 +151,19 @@ def create_conversation(db_path, title, kb_id=None):
 
 def get_conversation(db_path, conversation_id):
     """
-    获取单个对话的详细信息和所有消息
+    Get detailed information and all messages for a single conversation
     
-    参数:
-        db_path: 数据库路径
-        conversation_id: 对话ID
+    Parameters:
+        db_path: Database path
+        conversation_id: Conversation ID
         
-    返回:
-        dict: 包含对话详情和消息列表的字典
+    Returns:
+        dict: Dictionary containing conversation details and message list
     """
     conn = get_db_connection(db_path)
     cursor = conn.cursor()
     
-    # 获取对话详情
+    # Get conversation details
     cursor.execute(
         "SELECT * FROM conversations WHERE id = ?", 
         (conversation_id,)
@@ -174,14 +174,14 @@ def get_conversation(db_path, conversation_id):
         conn.close()
         return None
     
-    # 获取该对话的所有消息
+    # Get all messages for this conversation
     cursor.execute(
         "SELECT * FROM conversation_messages WHERE conversation_id = ? ORDER BY created_at ASC",
         (conversation_id,)
     )
     messages = [dict(row) for row in cursor.fetchall()]
     
-    # 转换为字典
+    # Convert to dictionary
     conversation_dict = dict(conversation)
     conversation_dict['messages'] = messages
     
@@ -190,21 +190,21 @@ def get_conversation(db_path, conversation_id):
 
 def get_conversations(db_path, kb_id=None, limit=20, offset=0):
     """
-    获取对话列表，可按知识库筛选
+    Get conversation list, can filter by knowledge base
     
-    参数:
-        db_path: 数据库路径
-        kb_id: 知识库ID (可选)
-        limit: 返回的最大记录数
-        offset: 分页起始位置
+    Parameters:
+        db_path: Database path
+        kb_id: Knowledge base ID (optional)
+        limit: Maximum number of records to return
+        offset: Pagination start position
         
-    返回:
-        list: 对话列表
+    Returns:
+        list: Conversation list
     """
     conn = get_db_connection(db_path)
     cursor = conn.cursor()
     
-    # 构建查询SQL
+    # Build query SQL
     query = "SELECT * FROM conversations"
     params = []
     
@@ -218,50 +218,50 @@ def get_conversations(db_path, kb_id=None, limit=20, offset=0):
     cursor.execute(query, params)
     conversations = [dict(row) for row in cursor.fetchall()]
     
-    # 获取每个对话的最后一条消息
-    for conv in conversations:
+    # Get the last message of each conversation
+    for conversation in conversations:
+        conversation_id = conversation['id']
         cursor.execute(
             "SELECT * FROM conversation_messages WHERE conversation_id = ? ORDER BY created_at DESC LIMIT 1",
-            (conv['id'],)
+            (conversation_id,)
         )
         last_message = cursor.fetchone()
         if last_message:
-            conv['last_message'] = dict(last_message)
+            conversation['last_message'] = dict(last_message)
     
     conn.close()
     return conversations
 
 def delete_conversation(db_path, conversation_id):
     """
-    删除对话及其所有消息
+    Delete a conversation and all its messages
     
-    参数:
-        db_path: 数据库路径
-        conversation_id: 对话ID
+    Parameters:
+        db_path: Database path
+        conversation_id: Conversation ID
         
-    返回:
-        bool: 是否成功删除
+    Returns:
+        bool: Whether the deletion was successful
     """
-    conn = get_db_connection(db_path)
-    cursor = conn.cursor()
-    
     try:
-        # 检查对话是否存在
+        conn = get_db_connection(db_path)
+        cursor = conn.cursor()
+        
+        # Check if conversation exists
         cursor.execute("SELECT id FROM conversations WHERE id = ?", (conversation_id,))
         if not cursor.fetchone():
             conn.close()
             return False
         
-        # 删除所有相关消息
+        # Delete all related messages
         cursor.execute("DELETE FROM conversation_messages WHERE conversation_id = ?", (conversation_id,))
         
-        # 删除对话
+        # Delete conversation
         cursor.execute("DELETE FROM conversations WHERE id = ?", (conversation_id,))
         
         conn.commit()
         conn.close()
         return True
     except Exception as e:
-        print(f"删除对话时出错: {str(e)}")
-        conn.close()
+        print(f"Error deleting conversation: {str(e)}")
         return False 

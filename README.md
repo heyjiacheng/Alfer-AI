@@ -19,7 +19,7 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 install Node.js 18+
 ```bash
-# Windows 用户从 https://nodejs.org 下载安装包
+# Windows users download install package from https://nodejs.org
 ```
 install Tauri CLI
 ```bash
@@ -41,5 +41,6 @@ python app.py
 ### start frontend (in separate terminal)
 ```bash
 cd ai-desktop-assistant
+npm install @react-pdf-viewer/zoom@3.12.0
 pnpm tauri dev
 ```

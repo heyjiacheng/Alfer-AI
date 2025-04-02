@@ -103,25 +103,25 @@ export default function ChatWindow() {
       if (activeConversation) {
         updateConversationLibraries(activeConversation.id, selectedLibraries);
         
-        // 更新发送消息逻辑 - 使用多知识库查询
+        // Update message sending logic - use multiple knowledge base queries
         let useDirect = selectedLibraries.length === 0;
         
-        console.log("发送消息:", messageContent);
-        console.log("选择的知识库数量:", selectedLibraries.length);
-        console.log("选择的知识库:", selectedLibraries);
-        console.log("是否使用直接对话模式:", useDirect);
+        console.log("Sending message:", messageContent);
+        console.log("Number of selected knowledge bases:", selectedLibraries.length);
+        console.log("Selected knowledge bases:", selectedLibraries);
+        console.log("Using direct chat mode:", useDirect);
         
         if (selectedLibraries.length >= 1) {
-          // 使用多知识库查询API - 可以同时查询多个知识库
-          console.log("使用多知识库查询模式");
+          // Use multiple knowledge base query API - can query multiple knowledge bases simultaneously
+          console.log("Using multiple knowledge base query mode");
           await sendMessage(
             messageContent,
             selectedLibraries,
-            false // 不使用直接对话模式
+            false // Not using direct chat mode
           );
         } else {
-          // 没有选择知识库，使用直接对话模式
-          console.log("没有选择知识库，使用直接对话模式");
+          // No knowledge base selected, use direct chat mode
+          console.log("No knowledge base selected, using direct chat mode");
           await sendMessage(
             messageContent,
             [],
@@ -151,7 +151,7 @@ export default function ChatWindow() {
       });
     }
     
-    // 调试：检查当前会话中的消息是否包含源信息
+    // Debug: Check if current conversation messages contain source information
     if (activeConversation?.messages) {
       const messagesWithSources = activeConversation.messages.filter(
         msg => !msg.isUser && msg.sources && msg.sources.length > 0
@@ -227,26 +227,26 @@ export default function ChatWindow() {
       title: message.substring(0, 30),
     };
 
-    // 与 handleSend 保持一致的处理逻辑
+    // Keep logic consistent with handleSend
     let useDirect = selectedLibraries.length === 0;
     
-    console.log("创建新会话并发送消息:", message);
-    console.log("选择的知识库数量:", selectedLibraries.length);
-    console.log("选择的知识库:", selectedLibraries);
-    console.log("是否使用直接对话模式:", useDirect);
+    console.log("Creating new conversation and sending message:", message);
+    console.log("Number of selected knowledge bases:", selectedLibraries.length);
+    console.log("Selected knowledge bases:", selectedLibraries);
+    console.log("Using direct chat mode:", useDirect);
     
-    // 使用与 handleSend 相同的逻辑
+    // Use the same logic as handleSend
     if (selectedLibraries.length >= 1) {
-      // 使用多知识库查询API - 可以同时查询多个知识库
-      console.log("使用多知识库查询模式");
+      // Use multiple knowledge base query API - can query multiple knowledge bases simultaneously
+      console.log("Using multiple knowledge base query mode");
       await sendMessage(
         message,
         selectedLibraries,
-        false // 不使用直接对话模式
+        false // Not using direct chat mode
       );
     } else {
-      // 没有选择知识库，使用直接对话模式
-      console.log("没有选择知识库，使用直接对话模式");
+      // No knowledge base selected, use direct chat mode
+      console.log("No knowledge base selected, using direct chat mode");
       await sendMessage(
         message,
         [],
@@ -290,7 +290,7 @@ export default function ChatWindow() {
   };
 
   const handleViewSources = (sources: ChatMessage['sources']) => {
-    console.log("ChatWindow接收到源信息数据:", sources);
+    console.log("ChatWindow received source information data:", sources);
     setCurrentSources(sources || []);
     setSourcesOpen(true);
   };
@@ -303,7 +303,7 @@ export default function ChatWindow() {
       "claude-2": "Claude 2",
       gemini: "Google Gemini",
     };
-    return `${modelNames[model]} 回复：${content} (模拟回复)`;
+    return `${modelNames[model]} response: ${content} (simulated response)`;
   };
 
   return (
@@ -672,25 +672,9 @@ export default function ChatWindow() {
                           size="small"
                           sx={{ p: 0.5, mr: 1 }}
                         />
-                        <Typography>直接对话</Typography>
-                        <Typography variant="caption" sx={{ ml: 1, color: 'text.secondary' }}>
-                          (不使用知识库)
-                        </Typography>
+                        <Typography>No Knowledge Base</Typography>
                       </Box>
                     </MenuItem>
-                    <Box sx={{ 
-                      px: 2, 
-                      py: 1, 
-                      borderBottom: '1px solid',
-                      borderColor: 'divider', 
-                      display: 'flex', 
-                      justifyContent: 'space-between',
-                      alignItems: 'center'
-                    }}>
-                      <Typography variant="caption" color="text.secondary">
-                        选择知识库 (可多选，将同时搜索所有选择的知识库)
-                      </Typography>
-                    </Box>
                     {allLibraries.map((lib) => (
                       <MenuItem
                         key={lib.id}
@@ -1032,9 +1016,9 @@ export default function ChatWindow() {
                         size="small"
                         sx={{ p: 0.5, mr: 1 }}
                       />
-                      <Typography>直接对话</Typography>
+                      <Typography>Direct Chat</Typography>
                       <Typography variant="caption" sx={{ ml: 1, color: 'text.secondary' }}>
-                        (不使用知识库)
+                        (No knowledge base)
                       </Typography>
                     </Box>
                   </MenuItem>
@@ -1048,7 +1032,7 @@ export default function ChatWindow() {
                     alignItems: 'center'
                   }}>
                     <Typography variant="caption" color="text.secondary">
-                      选择知识库 (可多选，将同时搜索所有选择的知识库)
+                      Choose knowledge base (can select multiple, will search all selected knowledge bases simultaneously)
                     </Typography>
                   </Box>
                   {allLibraries.map((lib) => (

@@ -7,7 +7,7 @@ export default function LibrarySelector() {
   const { selectedLibrary, setSelectedLibrary } = useChat();
   const { libraries } = useKnowledge();
   
-  // 调试日志
+  // Debug logs
   useEffect(() => {
     console.log('Current library in LibrarySelector:', selectedLibrary);
     console.log('Libraries available:', libraries);
@@ -20,26 +20,26 @@ export default function LibrarySelector() {
 
   return (
     <FormControl variant="outlined" size="small" sx={{ minWidth: 150, m: 1 }}>
-      <InputLabel id="library-select-label">知识库</InputLabel>
+      <InputLabel id="library-select-label">Knowledge Base</InputLabel>
       <Select
         labelId="library-select-label"
         value={selectedLibrary || ""}
         onChange={(e) => handleLibraryChange(e.target.value)}
-        label="知识库"
+        label="Knowledge Base"
         renderValue={(selected) => {
           if (!selected) {
-            return <Typography sx={{ color: 'text.secondary', fontStyle: 'italic' }}>直接对话</Typography>;
+            return <Typography sx={{ color: 'text.secondary', fontStyle: 'italic' }}>Direct Chat</Typography>;
           }
           
           const lib = libraries.find(l => l.id === selected);
-          return lib ? lib.name : "直接对话";
+          return lib ? lib.name : "Direct Chat";
         }}
       >
         <MenuItem value="">
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Typography>直接对话</Typography>
+            <Typography>Direct Chat</Typography>
             <Typography variant="caption" sx={{ ml: 1, color: 'text.secondary' }}>
-              (不使用知识库)
+              (No knowledge base)
             </Typography>
           </Box>
         </MenuItem>
@@ -48,7 +48,7 @@ export default function LibrarySelector() {
           <MenuItem key={lib.id} value={lib.id}>
             <ListItemText 
               primary={lib.name} 
-              secondary={lib.description || "没有描述"}
+              secondary={lib.description || "No description"}
               secondaryTypographyProps={{ noWrap: true, style: { maxWidth: '200px' } }}
             />
           </MenuItem>

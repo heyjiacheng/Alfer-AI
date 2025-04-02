@@ -43,34 +43,34 @@ export default function KnowledgeBase() {
     }
   }, [editFolderData, updateFolder]);
 
-  // 处理知识库点击
+  // Handle knowledge base click
   const handleLibraryClick = useCallback((libId: string) => {
-    console.log("当前选中的知识库:", selectedLibraryId);
-    console.log("点击的知识库:", libId);
+    console.log("Currently selected knowledge base:", selectedLibraryId);
+    console.log("Clicked knowledge base:", libId);
     
-    // 如果点击的是已选中的知识库，则取消选择
+    // If clicking on already selected knowledge base, deselect it
     if (libId === selectedLibraryId) {
-      console.log("取消选择知识库");
+      console.log("Deselecting knowledge base");
       selectLibrary(null);
     } else {
-      console.log("选择新的知识库:", libId);
+      console.log("Selecting new knowledge base:", libId);
       selectLibrary(libId);
     }
   }, [selectLibrary, selectedLibraryId]);
 
-  // 使用useMemo缓存列表，避免重新渲染时的闪烁
+  // Use useMemo to cache the list, avoiding flicker on re-renders
   const libraryList = useMemo(() => {
     return libraries.map(lib => (
       <ListItem 
         key={`${lib.id}-${lib.name}-${forceRender}`}
         disablePadding 
         sx={{ 
-          mb: 0.01, // 调整为与ChatHistory完全一致
+          mb: 0.01, // Adjust to be completely consistent with ChatHistory
         }}
       >
         <ListItemButton
           onClick={(e) => {
-            // 只有当点击的不是按钮时才执行选择知识库操作
+            // Only execute knowledge base selection when not clicking a button
             if (!e.defaultPrevented) {
               handleLibraryClick(lib.id);
             }
@@ -95,12 +95,12 @@ export default function KnowledgeBase() {
               '& .action-buttons': {
                 opacity: 1,
                 right: 8,
-                pointerEvents: 'auto' // 确保hover时按钮可点击
+                pointerEvents: 'auto' // Ensure buttons are clickable on hover
               }
             }
           }}
         >
-          {/* 使用ListItemText包装Typography以保持一致 */}
+          {/* Use ListItemText to wrap Typography for consistency */}
           <ListItemText
             primary={
               <Box sx={{ 
@@ -112,9 +112,9 @@ export default function KnowledgeBase() {
                 opacity: '1 !important',
                 zIndex: 1,
                 position: 'relative',
-                pointerEvents: 'none' // 让点击事件穿透到ListItemButton
+                pointerEvents: 'none' // Let click events pass through to ListItemButton
               }}>
-                {/* 使用单一层而非双层结构 */}
+                {/* Use single layer instead of double layer structure */}
                 <Typography 
                   noWrap 
                   sx={{ 
@@ -128,7 +128,7 @@ export default function KnowledgeBase() {
                     opacity: '1 !important',
                     display: 'block !important',
                     zIndex: 1,
-                    pointerEvents: 'none' // 让点击事件穿透
+                    pointerEvents: 'none' // Let click events pass through
                   }}
                 >
                   {lib.name}
@@ -143,7 +143,7 @@ export default function KnowledgeBase() {
                     opacity: '1 !important',
                     display: 'block !important',
                     zIndex: 1,
-                    pointerEvents: 'none' // 让点击事件穿透
+                    pointerEvents: 'none' // Let click events pass through
                   }}
                 >
                   ({getDocumentCount(lib.id)} files)
@@ -155,7 +155,7 @@ export default function KnowledgeBase() {
               visibility: 'visible !important',
               opacity: '1 !important',
               position: 'relative',
-              pointerEvents: 'none' // 让点击事件穿透到ListItemButton
+              pointerEvents: 'none' // Let click events pass through to ListItemButton
             }}
           />
           <Box 
@@ -174,13 +174,13 @@ export default function KnowledgeBase() {
               borderRadius: 1,
               py: 0.2,
               zIndex: 10,
-              pointerEvents: 'none' // 默认不接收点击事件，只在hover时接收
+              pointerEvents: 'none' // Default not receiving click events, only on hover
             }}
           >
             <IconButton 
               onClick={(e) => { 
-                e.preventDefault(); // 防止事件冒泡
-                e.stopPropagation(); // 阻止事件冒泡
+                e.preventDefault(); // Prevent event bubbling
+                e.stopPropagation(); // Stop event propagation
                 handleEdit(lib); 
               }} 
               size="small" 
@@ -193,8 +193,8 @@ export default function KnowledgeBase() {
             </IconButton>
             <IconButton 
               onClick={(e) => { 
-                e.preventDefault(); // 防止事件冒泡
-                e.stopPropagation(); // 阻止事件冒泡
+                e.preventDefault(); // Prevent event bubbling
+                e.stopPropagation(); // Stop event propagation
                 deleteLibrary(lib.id); 
               }} 
               size="small" 
@@ -212,10 +212,10 @@ export default function KnowledgeBase() {
   }, [libraries, forceRender, getDocumentCount, handleLibraryClick, handleEdit, deleteLibrary]);
 
   const handleModalClose = useCallback(() => {
-    // 立即设置状态，避免闪烁
+    // Immediately set state to avoid flickering
     setSelectedLib(null);
     setKnowledgeModalOpen(false);
-    // 使用requestAnimationFrame替代setTimeout，更符合浏览器渲染周期
+    // Use requestAnimationFrame instead of setTimeout, more in line with browser rendering cycle
     requestAnimationFrame(() => {
       setForceRender(prev => prev + 1);
     });

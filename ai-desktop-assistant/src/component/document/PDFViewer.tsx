@@ -265,7 +265,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
           <Typography variant="h6" component="h2" sx={{ flexGrow: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {fileName}
             <Typography variant="caption" display="block" color="text.secondary">
-              {`文档ID: ${getDocumentId()}`}
+              {`document ID: ${getDocumentId()}`}
             </Typography>
           </Typography>
           <Box sx={{ display: 'flex', gap: 1 }}>
@@ -277,7 +277,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
                 startIcon={showSidebar ? <KeyboardArrowRightIcon /> : <FormatQuoteIcon />}
                 onClick={toggleSidebar}
               >
-                {showSidebar ? "隐藏文本" : "检索到的文本"}
+                {showSidebar ? "hide text" : "retrieved text"}
               </Button>
             )}
             <Button
@@ -286,7 +286,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
               startIcon={<DownloadIcon />}
               onClick={handleDownload}
             >
-              下载
+              download
             </Button>
             <IconButton onClick={onClose} size="small">
               <CloseIcon />
@@ -296,7 +296,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
         
         {error && (
           <Alert severity="error" sx={{ mb: 2 }} icon={<ErrorOutlineIcon />}>
-            无法加载PDF文件。请使用下载按钮访问文档。
+            cannot load PDF file. please use the download button to access the document.
           </Alert>
         )}
         
@@ -327,7 +327,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
                 <CircularProgress size={40} />
                 <Typography variant="body1" sx={{ ml: 2 }}>
-                  加载PDF中...
+                  loading PDF...
                 </Typography>
               </Box>
             ) : error ? (
@@ -342,11 +342,11 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
               }}>
                 <ErrorOutlineIcon sx={{ fontSize: 48, color: 'error.main', mb: 2 }} />
                 <Typography variant="body1" gutterBottom>
-                  无法加载PDF文件
+                  cannot load PDF file
                 </Typography>
                 <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
                   <Button variant="contained" onClick={handleDownload}>
-                    下载PDF文件
+                    download PDF file
                   </Button>
                 </Box>
               </Box>
@@ -367,7 +367,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
                       setError(true);
                       return (
                         <Alert severity="error" sx={{ m: 2 }}>
-                          PDF渲染失败: {error.message || '未知错误'}
+                          PDF rendering failed: {error.message || 'unknown error'}
                         </Alert>
                       );
                     }}
@@ -392,7 +392,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
                 borderColor: 'divider',
               }}>
                 <Typography variant="caption" color="text.secondary">
-                  已跳转至第 {targetPage} 页
+                  jumped to page {targetPage}
                 </Typography>
               </Box>
             )}
@@ -419,10 +419,10 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Typography variant="subtitle1" color="primary" fontWeight="medium">
                   <FormatQuoteIcon fontSize="small" sx={{ verticalAlign: 'middle', mr: 1 }} />
-                  检索到的文本内容
+                  retrieved text content
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 0.5 }}>
-                  <Tooltip title={sourceTextCopied ? "已复制" : "复制全文"}>
+                  <Tooltip title={sourceTextCopied ? "copied" : "copy full text"}>
                     <IconButton 
                       size="small" 
                       onClick={handleCopySourceText} 
@@ -431,7 +431,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
                       <ContentCopyIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
-                  <Tooltip title="隐藏文本">
+                  <Tooltip title="hide text">
                     <IconButton 
                       size="small" 
                       onClick={toggleSidebar}
@@ -455,7 +455,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
               {targetPage > 0 && (
                 <Box sx={{ mt: 2, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
                   <Typography variant="caption" color="text.secondary" align="center" display="block">
-                    以上内容来自第 {targetPage} 页
+                    content from page {targetPage}
                   </Typography>
                 </Box>
               )}

@@ -1,15 +1,15 @@
-// API基础配置
+// API Base Configuration
 const API_BASE_URL = "http://localhost:8080";
 
 // Error handling function
 const handleApiError = (error: any) => {
   console.error('API Error:', error);
-  return { error: error.message || '未知错误' };
+  return { error: error.message || 'Unknown error' };
 };
 
-// 知识库API
+// Knowledge Base API
 export const knowledgeBaseApi = {
-  // 获取所有知识库
+  // Get All Knowledge Bases
   getAll: async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/knowledge-bases`);
@@ -21,7 +21,7 @@ export const knowledgeBaseApi = {
     }
   },
 
-  // 获取单个知识库
+  // Get Single Knowledge Base
   get: async (id: string) => {
     try {
       const response = await fetch(`${API_BASE_URL}/knowledge-bases/${id}`);
@@ -32,7 +32,7 @@ export const knowledgeBaseApi = {
     }
   },
 
-  // 创建知识库
+  // Create Knowledge Base
   create: async (data: { name: string; description: string }) => {
     try {
       const response = await fetch(`${API_BASE_URL}/knowledge-bases`, {
@@ -47,7 +47,7 @@ export const knowledgeBaseApi = {
     }
   },
 
-  // 更新知识库
+  // Update Knowledge Base
   update: async (id: string, data: { name?: string; description?: string }) => {
     try {
       const response = await fetch(`${API_BASE_URL}/knowledge-bases/${id}`, {
@@ -62,7 +62,7 @@ export const knowledgeBaseApi = {
     }
   },
 
-  // 删除知识库
+  // Delete Knowledge Base
   delete: async (id: string) => {
     try {
       const response = await fetch(`${API_BASE_URL}/knowledge-bases/${id}`, {
@@ -76,9 +76,9 @@ export const knowledgeBaseApi = {
   },
 };
 
-// 文档API
+// Document API
 export const documentApi = {
-  // 获取所有文档
+  // Get All Documents
   getAll: async (knowledgeBaseId?: string) => {
     try {
       const url = knowledgeBaseId
@@ -94,7 +94,7 @@ export const documentApi = {
     }
   },
 
-  // 获取单个文档
+  // Get Single Document
   get: async (id: string) => {
     try {
       const response = await fetch(`${API_BASE_URL}/documents/${id}`);
@@ -105,15 +105,15 @@ export const documentApi = {
     }
   },
 
-  // 上传文档到知识库
+  // Upload Document to Knowledge Base
   upload: async (knowledgeBaseId: string, fileData: { name: string, file: ArrayBuffer }) => {
     try {
-      // 创建FormData对象
+      // Create FormData object
       const formData = new FormData();
       const blob = new Blob([fileData.file], { type: 'application/octet-stream' });
       formData.append('file', blob, fileData.name);
       
-      // 使用fetch上传文件
+      // Use fetch to upload file
       const response = await fetch(`${API_BASE_URL}/upload/${knowledgeBaseId}`, {
         method: 'POST',
         body: formData,
@@ -122,12 +122,12 @@ export const documentApi = {
       if (!response.ok) throw new Error(`HTTP error ${response.status}`);
       return response.json();
     } catch (error) {
-      console.error(`文件上传失败:`, error);
+      console.error(`File upload failed:`, error);
       return handleApiError(error);
     }
   },
 
-  // 下载文档
+  // Download Document
   download: async (id: string) => {
     try {
       // First check if the document exists
@@ -149,7 +149,7 @@ export const documentApi = {
       }
       return response.blob();
     } catch (error) {
-      console.error(`文档下载失败 (ID: ${id}):`, error);
+      console.error(`Document download failed (ID: ${id}):`, error);
       return handleApiError(error);
     }
   },
@@ -164,7 +164,7 @@ export const documentApi = {
     return `${API_BASE_URL}/documents/${id}/download`;
   },
 
-  // 删除文档
+  // Delete Document
   delete: async (id: string) => {
     try {
       const response = await fetch(`${API_BASE_URL}/documents/${id}`, {
@@ -178,9 +178,9 @@ export const documentApi = {
   },
 };
 
-// 查询API
+// Query API
 export const queryApi = {
-  // 查询知识库或直接对话
+  // Query Knowledge Base or Direct Chat
   query: async (
     query: string,
     knowledgeBaseId?: string,
@@ -194,22 +194,22 @@ export const queryApi = {
         payload.conversation_id = conversationId;
       }
 
-      // 处理知识库参数，优先使用多知识库ID列表
+      // Handle knowledge base parameters, prioritize multiple knowledge base ID list
       if (knowledgeBaseIds && knowledgeBaseIds.length > 0) {
-        // 使用多知识库模式
+        // Use multiple knowledge base mode
         payload.knowledge_base_ids = knowledgeBaseIds;
-        console.log(`查询多个知识库: ${knowledgeBaseIds}`);
+        console.log(`Querying multiple knowledge bases: ${knowledgeBaseIds}`);
       } else if (knowledgeBaseId) {
-        // 使用单一知识库模式
+        // Use single knowledge base mode
         payload.knowledge_base_id = knowledgeBaseId;
-        console.log(`查询知识库: ${knowledgeBaseId}`);
+        console.log(`Querying knowledge base: ${knowledgeBaseId}`);
       } else {
-        // 使用直接对话模式
-        console.log("使用直接对话模式");
+        // Use direct chat mode
+        console.log("Using direct chat mode");
       }
 
-      console.log(`使用API端点: ${API_BASE_URL}/query`);
-      console.log("发送数据:", payload);
+      console.log(`Using API endpoint: ${API_BASE_URL}/query`);
+      console.log("Sending data:", payload);
 
       const response = await fetch(`${API_BASE_URL}/query`, {
         method: "POST",
@@ -219,23 +219,23 @@ export const queryApi = {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(`API错误 (${response.status}): ${errorText}`);
+        console.error(`API error (${response.status}): ${errorText}`);
         throw new Error(`HTTP error ${response.status}: ${errorText}`);
       }
       
       const result = await response.json();
-      console.log("API响应:", result);
+      console.log("API response:", result);
       return result;
     } catch (error) {
       return handleApiError(error);
     }
   },
 
-  // 直接使用chat端点与AI对话
+  // Directly use chat endpoint for AI conversation
   chat: async (query: string, conversationId?: string) => {
     try {
-      console.log("直接使用chat端点");
-      // 使用显式引用而不是this
+      console.log("Directly using chat endpoint");
+      // Use explicit reference instead of this
       return queryApi.query(query, undefined, conversationId);
     } catch (error) {
       return handleApiError(error);
@@ -243,9 +243,9 @@ export const queryApi = {
   },
 };
 
-// 会话API
+// Conversation API
 export const conversationApi = {
-  // 获取所有会话
+  // Get All Conversations
   getAll: async (knowledgeBaseId?: string) => {
     try {
       const url = knowledgeBaseId
@@ -261,7 +261,7 @@ export const conversationApi = {
     }
   },
 
-  // 获取单个会话
+  // Get Single Conversation
   get: async (id: string) => {
     try {
       const response = await fetch(`${API_BASE_URL}/conversations/${id}`);
@@ -272,7 +272,7 @@ export const conversationApi = {
     }
   },
 
-  // 创建会话
+  // Create Conversation
   create: async (data: { title: string; knowledge_base_id?: string }) => {
     try {
       const response = await fetch(`${API_BASE_URL}/conversations`, {
@@ -287,7 +287,7 @@ export const conversationApi = {
     }
   },
 
-  // 删除会话
+  // Delete Conversation
   delete: async (id: string) => {
     try {
       const response = await fetch(`${API_BASE_URL}/conversations/${id}`, {
@@ -300,7 +300,7 @@ export const conversationApi = {
     }
   },
 
-  // 添加消息到会话
+  // Add Message to Conversation
   addMessage: async (
     conversationId: string,
     data: { content: string; message_type: "user" | "assistant"; sources?: any }
