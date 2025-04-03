@@ -4,14 +4,30 @@ import { ChatMessage, useChat  } from '../../contexts/ChatContext';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import EditIcon from '@mui/icons-material/Edit';
 import SourceIcon from '@mui/icons-material/Source';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 
 interface MessageBubbleProps {
   message: ChatMessage;
   isUser: boolean;
   onViewSources?: (sources: ChatMessage['sources']) => void;
+  showHistoryNavigation?: boolean;
+  onNavigateHistory?: (direction: 'forward' | 'backward') => void;
+  canNavigateBackward?: boolean;
+  canNavigateForward?: boolean;
+  versionInfo?: { current: number; total: number };
 }
 
-export default React.memo(function MessageBubble({ message, isUser, onViewSources }: MessageBubbleProps) {
+export default React.memo(function MessageBubble({ 
+  message, 
+  isUser, 
+  onViewSources,
+  showHistoryNavigation = false,
+  onNavigateHistory,
+  canNavigateBackward = false,
+  canNavigateForward = false,
+  versionInfo = { current: 0, total: 0 }
+}: MessageBubbleProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(message.content);
   const { editMessage } = useChat();
@@ -27,7 +43,10 @@ export default React.memo(function MessageBubble({ message, isUser, onViewSource
   };
 
   const handleSave = () => {
-    if (editedContent.trim() && editedContent !== message.content) {
+    // 无论内容是否变化，都保存消息
+    // 这允许用户保存相同内容的多个版本
+    if (editedContent.trim()) {
+      console.log("保存消息编辑:", message.id, "内容:", editedContent);
       editMessage(message.id, editedContent);
     }
     setIsEditing(false);
@@ -430,28 +449,99 @@ export default React.memo(function MessageBubble({ message, isUser, onViewSource
           </Box>
         )}
         
-        {/* 编辑图标移至气泡外部，并改进样式 */}
+        {/* 编辑图标和导航箭头放在一起 */}
         {isUser && !isEditing && (
-          <IconButton 
-            size="small" 
-            onClick={handleEdit}
-            sx={{ 
-              padding: 0.6,
-              mt: 0.8,
-              opacity: 0.4, 
-              transition: 'all 0.2s ease',
-              backgroundColor: isDarkMode ? 'rgba(60, 60, 60, 0.4)' : 'rgba(230, 230, 230, 0.5)',
-              '&:hover': { 
-                opacity: 1,
-                backgroundColor: isDarkMode ? 'rgba(80, 80, 80, 0.7)' : 'rgba(210, 210, 210, 0.8)',
-                transform: 'scale(1.1)'
-              },
-              color: 'text.secondary',
-              ml: 1
-            }}
-          >
-            <EditIcon fontSize="small" sx={{ fontSize: '0.9rem' }} />
-          </IconButton>
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            mt: 0.8,
+            ml: 1
+          }}>
+            <IconButton 
+              size="small" 
+              onClick={handleEdit}
+              sx={{ 
+                padding: 0.6,
+                opacity: 0.4, 
+                transition: 'all 0.2s ease',
+                backgroundColor: isDarkMode ? 'rgba(60, 60, 60, 0.4)' : 'rgba(230, 230, 230, 0.5)',
+                '&:hover': { 
+                  opacity: 1,
+                  backgroundColor: isDarkMode ? 'rgba(80, 80, 80, 0.7)' : 'rgba(210, 210, 210, 0.8)',
+                  transform: 'scale(1.1)'
+                },
+                color: 'text.secondary',
+              }}
+            >
+              <EditIcon fontSize="small" sx={{ fontSize: '0.9rem' }} />
+            </IconButton>
+            
+            {/* 历史导航箭头按钮 - 靠近编辑按钮 */}
+            {showHistoryNavigation && onNavigateHistory && (
+              <>
+                <IconButton
+                  size="small"
+                  onClick={() => onNavigateHistory('backward')}
+                  disabled={!canNavigateBackward}
+                  sx={{
+                    padding: 0.6,
+                    ml: 0.5,
+                    opacity: canNavigateBackward ? 0.4 : 0.2,
+                    transition: 'all 0.2s ease',
+                    backgroundColor: isDarkMode ? 'rgba(60, 60, 60, 0.4)' : 'rgba(230, 230, 230, 0.5)',
+                    '&:hover': canNavigateBackward ? { 
+                      opacity: 1,
+                      backgroundColor: isDarkMode ? 'rgba(80, 80, 80, 0.7)' : 'rgba(210, 210, 210, 0.8)',
+                      transform: 'scale(1.1)'
+                    } : {},
+                    color: 'text.secondary',
+                  }}
+                >
+                  <ArrowBackIcon fontSize="small" sx={{ fontSize: '0.9rem' }} />
+                </IconButton>
+                
+                {/* 版本计数器 */}
+                <Box sx={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  minWidth: '36px',
+                  height: '24px',
+                  borderRadius: '12px',
+                  fontSize: '0.75rem',
+                  fontFamily: '"Space Mono", monospace',
+                  fontWeight: 'medium',
+                  color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.7)',
+                  backgroundColor: isDarkMode ? 'rgba(70, 70, 70, 0.5)' : 'rgba(220, 220, 220, 0.7)',
+                  mx: 0.5,
+                  px: 0.8
+                }}>
+                  {versionInfo.current}/{versionInfo.total}
+                </Box>
+                
+                <IconButton
+                  size="small"
+                  onClick={() => onNavigateHistory('forward')}
+                  disabled={!canNavigateForward}
+                  sx={{
+                    padding: 0.6,
+                    ml: 0.5,
+                    opacity: canNavigateForward ? 0.4 : 0.2,
+                    transition: 'all 0.2s ease',
+                    backgroundColor: isDarkMode ? 'rgba(60, 60, 60, 0.4)' : 'rgba(230, 230, 230, 0.5)',
+                    '&:hover': canNavigateForward ? { 
+                      opacity: 1,
+                      backgroundColor: isDarkMode ? 'rgba(80, 80, 80, 0.7)' : 'rgba(210, 210, 210, 0.8)',
+                      transform: 'scale(1.1)'
+                    } : {},
+                    color: 'text.secondary',
+                  }}
+                >
+                  <ArrowForwardIcon fontSize="small" sx={{ fontSize: '0.9rem' }} />
+                </IconButton>
+              </>
+            )}
+          </Box>
         )}
       </Box>
     </Box>

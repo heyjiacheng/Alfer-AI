@@ -40,6 +40,17 @@ interface Conversation {
   messageCount: number;
 }
 
+interface MessageHistoryEntry {
+  original: ChatMessage;
+  originalResponse?: ChatMessage; // 原始消息的AI回复
+  edited: ChatMessage[];
+  responses: ChatMessage[]; // 每个编辑版本对应的AI回复
+}
+
+interface MessageHistoryState {
+  [messageId: string]: MessageHistoryEntry;
+}
+
 interface ChatContextType {
   conversations: Conversation[];
   activeConversation: Conversation | null;
@@ -60,6 +71,13 @@ interface ChatContextType {
   selectedLibrary: string;
   setSelectedLibrary: (libraryId: string) => void;
   editMessage: (messageId: string, newContent: string) => Promise<void>;
+  messageHistory: MessageHistoryState;
+  currentHistoryIndex: {[messageId: string]: number};
+  navigateMessageHistory: (messageId: string, direction: 'forward' | 'backward') => void;
+  hasMessageHistory: (messageId: string) => boolean;
+  canNavigateMessageBackward: (messageId: string) => boolean;
+  canNavigateMessageForward: (messageId: string) => boolean;
+  getMessageVersionInfo: (messageId: string) => { current: number; total: number };
 }
 
 const ChatContext = createContext<ChatContextType>(null!);
@@ -84,6 +102,8 @@ export function ChatProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [activeConversation, setActiveConversation] =
     useState<Conversation | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [messageHistory, setMessageHistory] = useState<MessageHistoryState>({});
+  const [currentHistoryIndex, setCurrentHistoryIndex] = useState<{[messageId: string]: number}>({});
 
   // 当模型选择改变时保存到 localStorage
   useEffect(() => {
@@ -374,16 +394,38 @@ export function ChatProvider({ children }: Readonly<{ children: ReactNode }>) {
     try {
       setIsLoading(true);
 
-      // 创建用户消息
-      const userMessage: ChatMessage = {
+      let finalContent = content.trim();
+      
+      // 创建新的消息对象
+      const newUserMessage: ChatMessage = {
         id: Date.now().toString(),
-        content,
+        content: finalContent,
         isUser: true,
         timestamp: new Date(),
       };
 
-      let currentConversation = activeConversation;
-      let conversationId: string;
+      let currentConversation: Conversation;
+
+      // 如果存在活动会话，将消息添加到该会话
+      if (activeConversation) {
+        // 不需要保存对话历史，现在我们保存消息级别的历史
+        currentConversation = {
+          ...activeConversation,
+          messages: [...activeConversation.messages, newUserMessage],
+          messageCount: activeConversation.messageCount + 1,
+        };
+      } else {
+        // 否则创建新会话
+        currentConversation = await createConversationWithMessage(finalContent);
+      }
+
+      // 更新活动会话和会话列表
+      setActiveConversation(currentConversation);
+      setConversations((prev) =>
+        prev.map((conv) =>
+          conv.id === currentConversation.id ? currentConversation : conv
+        )
+      );
 
       // 保存当前选择的知识库
       if (selectedLibraries.length > 0) {
@@ -392,131 +434,23 @@ export function ChatProvider({ children }: Readonly<{ children: ReactNode }>) {
         // setSelectedLibrary(selectedLibraries[0]);
       }
 
-      // 如果没有活动对话，创建一个新的
-      if (!currentConversation) {
-        try {
-          // 先创建会话，再添加消息，避免本地先显示消息造成重复
-          const response = await conversationApi.create({
-            title:
-              content.substring(0, 30) + (content.length > 30 ? "..." : ""),
-            knowledge_base_id:
-              !useDirect && selectedLibraries.length === 1
-                ? selectedLibraries[0]
-                : undefined,
-          });
-
-          if (!response || !response.conversation_id) {
-            throw new Error("Failed to create conversation: Invalid response");
-          }
-
-          conversationId = response.conversation_id.toString();
-          
-          // 先添加消息到后端
-          try {
-            await conversationApi.addMessage(conversationId, {
-              content,
-              message_type: "user",
-            });
-          } catch (error) {
-            console.error("Failed to save user message:", error);
-          }
-
-          // 从后端获取完整会话（包含消息）
-          const conversationDetail = await conversationApi.get(conversationId);
-          const messages = conversationDetail?.messages?.map((msg: any) => ({
-            id: msg.id.toString(),
-            content: msg.content,
-            isUser: msg.message_type === "user",
-            timestamp: new Date(msg.created_at),
-          })) || [userMessage]; // 如果获取失败，使用本地创建的消息
-
-          currentConversation = {
-            id: conversationId,
-            title:
-              content.substring(0, 30) + (content.length > 30 ? "..." : ""),
-            messages,
-            files: [],
-            messageCount: messages.length,
-            createdAt: new Date(),
-          };
-
-          setConversations((prev) => [currentConversation!, ...prev]);
-          setActiveConversation(currentConversation);
-        } catch (error) {
-          console.error("Failed to create conversation:", error);
-          throw error;
-        }
-      } else {
-        // 使用现有对话
-        conversationId = currentConversation.id;
-
-        // 添加消息到后端
-        try {
-          await conversationApi.addMessage(conversationId, {
-            content,
-            message_type: "user",
-          });
-          
-          // 从后端检查是否已经添加成功
-          const conversationDetail = await conversationApi.get(conversationId);
-          const backendMessages = conversationDetail?.messages || [];
-          
-          // 检查后端是否已包含此消息
-          const messageExists = backendMessages.some(
-            (msg: any) => 
-              msg.content === content && 
-              msg.message_type === "user" &&
-              // 检查是否是最新消息
-              new Date(msg.created_at) > new Date(Date.now() - 60000) // 1分钟内创建的
-          );
-          
-          // 只有当后端没有此消息时，才添加到本地状态
-          if (!messageExists) {
-            // 更新状态以显示用户消息
-            currentConversation = {
-              ...currentConversation,
-              messages: [...currentConversation.messages, userMessage],
-              messageCount: currentConversation.messageCount + 1,
-            };
-
-            setActiveConversation(currentConversation);
-            setConversations((prev) =>
-              prev.map((c) => (c.id === conversationId ? currentConversation! : c))
-            );
-          }
-        } catch (error) {
-          console.error("Failed to save user message:", error);
-          // 如果添加到后端失败，仍然添加到本地状态，保证用户体验
-          currentConversation = {
-            ...currentConversation,
-            messages: [...currentConversation.messages, userMessage],
-            messageCount: currentConversation.messageCount + 1,
-          };
-
-          setActiveConversation(currentConversation);
-          setConversations((prev) =>
-            prev.map((c) => (c.id === conversationId ? currentConversation! : c))
-          );
-        }
-      }
-
       // 查询知识库或直接对话
       let response;
       try {
         if (useDirect) {
           // 直接与Ollama对话
           console.log("使用直接对话模式");
-          response = await queryApi.chat(content, conversationId);
+          response = await queryApi.chat(content, currentConversation.id);
         } else if (selectedLibraries.length === 1) {
           // 查询单一知识库
           response = await queryApi.query(
             content,
             selectedLibraries[0],
-            conversationId
+            currentConversation.id
           );
         } else {
           // 查询所有知识库
-          response = await queryApi.query(content, undefined, conversationId);
+          response = await queryApi.query(content, undefined, currentConversation.id);
         }
 
         // 处理响应中的来源
@@ -554,12 +488,12 @@ export function ChatProvider({ children }: Readonly<{ children: ReactNode }>) {
             setActiveConversation(currentConversation);
             setConversations((prev) =>
               prev.map((c) =>
-                c.id === conversationId ? currentConversation! : c
+                c.id === currentConversation.id ? currentConversation! : c
               )
             );
 
             // 尝试使用直接对话模式
-            response = await queryApi.chat(content, conversationId);
+            response = await queryApi.chat(content, currentConversation.id);
 
             // 如果成功，移除临时错误消息
             currentConversation = {
@@ -572,7 +506,7 @@ export function ChatProvider({ children }: Readonly<{ children: ReactNode }>) {
             setActiveConversation(currentConversation);
             setConversations((prev) =>
               prev.map((c) =>
-                c.id === conversationId ? currentConversation! : c
+                c.id === currentConversation.id ? currentConversation! : c
               )
             );
           } catch (chatError) {
@@ -586,37 +520,27 @@ export function ChatProvider({ children }: Readonly<{ children: ReactNode }>) {
         }
       }
 
-      // 创建AI回复消息
-      const aiMessage: ChatMessage = {
+      // 处理AI回复
+      const botMessage: ChatMessage = {
         id: Date.now().toString(),
-        content: response?.answer || "抱歉，我找不到相关的答案。",
+        content: response?.answer || "Sorry, I couldn't process that request.",
         isUser: false,
         timestamp: new Date(),
-        sources: response?.sources || []
+        sources: processSourceInfo(response?.source_documents),
       };
 
-      console.log("创建AI回复消息:", aiMessage);
-      console.log("AI回复消息包含源信息:", aiMessage.sources);
+      // 更新会话
+      const updatedWithAI = {
+        ...currentConversation,
+        messages: [...currentConversation.messages, botMessage],
+        messageCount: currentConversation.messageCount + 1,
+      };
 
-      // 检查当前会话中是否已有相同内容的AI回复消息
-      const aiMessageExists = currentConversation.messages.some(
-        (msg) => !msg.isUser && msg.content === aiMessage.content
+      // 不再需要保存对话的历史记录，我们现在使用消息级别的历史记录
+      setActiveConversation(updatedWithAI);
+      setConversations((prev) =>
+        prev.map((c) => (c.id === currentConversation.id ? updatedWithAI : c))
       );
-
-      // 只有当不存在相同内容的AI回复时，才添加新消息
-      if (!aiMessageExists) {
-        // 更新状态以显示AI回复
-        const updatedWithAI = {
-          ...currentConversation,
-          messages: [...currentConversation.messages, aiMessage],
-          messageCount: currentConversation.messageCount + 1,
-        };
-
-        setActiveConversation(updatedWithAI);
-        setConversations((prev) =>
-          prev.map((c) => (c.id === conversationId ? updatedWithAI : c))
-        );
-      }
     } catch (error) {
       console.error("Error in message flow:", error);
 
@@ -648,17 +572,6 @@ export function ChatProvider({ children }: Readonly<{ children: ReactNode }>) {
     }
   };
 
-  const mockAIResponse = async (content: string, model: string) => {
-    await new Promise((resolve) => setTimeout(resolve, 10000));
-    const modelNames: { [key: string]: string } = {
-      "deepseek-r1": "DeepSeek R1",
-      "gpt-4": "ChatGPT-4",
-      "claude-2": "Claude 2",
-      gemini: "Google Gemini",
-    };
-    return `${modelNames[model]} 回复：${content} (模拟回复)`;
-  };
-
   // Add these new methods
   const deleteConversation = async (id: string) => {
     try {
@@ -683,6 +596,288 @@ export function ChatProvider({ children }: Readonly<{ children: ReactNode }>) {
     }
   };
 
+  // 修改导航函数以支持特定消息的历史导航
+  const navigateMessageHistory = (messageId: string, direction: 'forward' | 'backward') => {
+    if (!activeConversation) return;
+    
+    // 确保有历史记录
+    const history = messageHistory[messageId];
+    if (!history) {
+      console.error("No message history found for message ID:", messageId);
+      return;
+    }
+    
+    // 从当前索引状态中获取当前索引，默认为0
+    const currentIndex = currentHistoryIndex[messageId] ?? 0;
+    console.log(`导航历史 - 当前索引: ${currentIndex}, 方向: ${direction}, 消息ID: ${messageId}`);
+    console.log("历史记录:", history);
+    
+    // 计算新索引
+    let newIndex = currentIndex;
+    
+    if (direction === 'backward') {
+      // 向后 (查看历史)
+      if (currentIndex > -1) {
+        newIndex = currentIndex - 1;
+      }
+    } else if (direction === 'forward') {
+      // 向前 (查看更新)
+      if (currentIndex < history.edited.length - 1) {
+        newIndex = currentIndex + 1;
+      }
+    }
+    
+    console.log(`新索引: ${newIndex}`);
+    
+    // 找到要修改的消息索引
+    const messageIndex = activeConversation.messages.findIndex(
+      (msg) => msg.id === messageId
+    );
+    
+    if (messageIndex === -1) {
+      console.error("Message not found in active conversation:", messageId);
+      return;
+    }
+    
+    // 创建会话消息的副本
+    const updatedMessages = [...activeConversation.messages];
+    
+    // 根据索引获取要显示的消息和其对应的AI回复
+    if (newIndex === -1) {
+      // 显示原始消息和原始回复
+      updatedMessages[messageIndex] = {...history.original}; // 创建副本以避免引用问题
+      console.log("显示原始消息:", history.original);
+      
+      // 如果有原始AI回复，则也显示它
+      if (history.originalResponse && messageIndex + 1 < updatedMessages.length) {
+        if (!updatedMessages[messageIndex + 1].isUser) {
+          // 如果下一条消息是AI消息，替换它
+          updatedMessages[messageIndex + 1] = {...history.originalResponse};
+          console.log("显示原始回复:", history.originalResponse);
+        } else if (messageIndex + 1 === updatedMessages.length) {
+          // 如果是最后一条消息，添加原始回复
+          updatedMessages.push({...history.originalResponse});
+          console.log("添加原始回复:", history.originalResponse);
+        }
+      }
+    } else {
+      // 显示编辑后的消息
+      if (history.edited && history.edited.length > newIndex) {
+        // 替换用户消息
+        updatedMessages[messageIndex] = {...history.edited[newIndex]}; // 创建副本以避免引用问题
+        console.log("显示编辑后的消息:", history.edited[newIndex], "索引:", newIndex);
+        
+        // 如果有对应的AI回复，则也显示它
+        if (history.responses && history.responses.length > newIndex) {
+          const aiResponse = history.responses[newIndex];
+          if (messageIndex + 1 < updatedMessages.length) {
+            if (!updatedMessages[messageIndex + 1].isUser) {
+              // 如果下一条消息是AI消息，替换它
+              updatedMessages[messageIndex + 1] = {...aiResponse};
+              console.log("显示编辑版本的回复:", aiResponse);
+            }
+          } else {
+            // 如果是最后一条消息，添加AI回复
+            updatedMessages.push({...aiResponse});
+            console.log("添加编辑版本的回复:", aiResponse);
+          }
+        }
+      } else {
+        console.error("No edited message found at index:", newIndex);
+        return;
+      }
+    }
+    
+    // 更新会话，保留到AI回复为止
+    const messageEndsAt = messageIndex + (
+      messageIndex + 1 < updatedMessages.length && !updatedMessages[messageIndex + 1].isUser 
+        ? 1  // 包含AI回复
+        : 0  // 只有用户消息
+    );
+    
+    const updatedConversation = {
+      ...activeConversation,
+      messages: updatedMessages.slice(0, messageEndsAt + 1)
+    };
+    
+    // 更新当前索引
+    setCurrentHistoryIndex(prev => ({
+      ...prev,
+      [messageId]: newIndex
+    }));
+    
+    // 更新活动会话
+    setActiveConversation(updatedConversation);
+    
+    // 更新会话列表
+    setConversations(prev => 
+      prev.map(conv => 
+        conv.id === activeConversation.id ? updatedConversation : conv
+      )
+    );
+  };
+  
+  // 保存原始消息到历史记录
+  const saveOriginalMessage = (messageId: string, message: ChatMessage) => {
+    console.log("保存原始消息:", messageId, message);
+    
+    // 使用函数式更新确保获取最新状态
+    setMessageHistory(prevHistory => {
+      // 如果已经有这个消息的历史记录，不要覆盖
+      if (prevHistory[messageId]) {
+        return prevHistory;
+      }
+      
+      // 创建新的历史记录条目，确保类型正确
+      const newEntry: MessageHistoryEntry = {
+        original: { ...message }, // 创建深拷贝
+        originalResponse: undefined, // 原始消息的AI回复
+        edited: [],
+        responses: []
+      };
+      
+      // 返回更新后的历史记录
+      const result: MessageHistoryState = {
+        ...prevHistory,
+        [messageId]: newEntry
+      };
+      
+      return result;
+    });
+  };
+
+  // 保存原始消息及其AI回复到历史记录
+  const saveOriginalMessageWithResponse = (messageId: string, message: ChatMessage, response: ChatMessage) => {
+    console.log("保存原始消息及回复:", messageId, message, response);
+    
+    setMessageHistory(prevHistory => {
+      // 如果已经有这个消息的历史记录，不要覆盖
+      if (prevHistory[messageId]) {
+        return prevHistory;
+      }
+      
+      // 创建新的历史记录条目，确保类型正确
+      const newEntry: MessageHistoryEntry = {
+        original: { ...message }, // 创建深拷贝
+        originalResponse: { ...response }, // 原始消息的AI回复
+        edited: [],
+        responses: []
+      };
+      
+      // 返回更新后的历史记录
+      const result: MessageHistoryState = {
+        ...prevHistory,
+        [messageId]: newEntry
+      };
+      
+      return result;
+    });
+  };
+  
+  // 存储编辑后的消息到历史记录
+  const saveEditedMessage = (messageId: string, originalMessage: ChatMessage, editedMessage: ChatMessage) => {
+    console.log("保存编辑后消息:", messageId, editedMessage);
+    
+    // 使用函数式更新确保获取最新状态
+    setMessageHistory(prevHistory => {
+      // 获取现有的历史记录，如果没有则创建新的
+      const existingEntry = prevHistory[messageId] || {
+        original: { ...originalMessage },
+        originalResponse: undefined, // 原始消息的AI回复
+        edited: [] as ChatMessage[],
+        responses: [] as ChatMessage[]
+      };
+      
+      // 创建新的编辑历史数组
+      const updatedEdited = [...existingEntry.edited, { ...editedMessage }];
+      
+      // 创建更新后的历史记录条目，确保类型正确
+      const updatedEntry: MessageHistoryEntry = {
+        original: existingEntry.original,
+        originalResponse: existingEntry.originalResponse, // 原始消息的AI回复
+        edited: updatedEdited,
+        responses: existingEntry.responses
+      };
+      
+      console.log("更新后的历史记录条目:", updatedEntry);
+      
+      // 返回更新后的历史记录
+      const result: MessageHistoryState = {
+        ...prevHistory,
+        [messageId]: updatedEntry
+      };
+      
+      return result;
+    });
+    
+    // 更新索引到新添加的编辑版本
+    setMessageHistory(currentHistory => {
+      const editedLength = (currentHistory[messageId]?.edited.length || 0);
+      console.log(`消息 ${messageId} 的编辑历史长度: ${editedLength}`);
+      
+      // 更新当前历史索引状态
+      setCurrentHistoryIndex(prevIndices => ({
+        ...prevIndices,
+        [messageId]: editedLength - 1 // 指向最新添加的编辑
+      }));
+      
+      return currentHistory; // 不实际修改历史记录，只是为了触发更新
+    });
+  };
+  
+  // 保存编辑后的消息及其AI回复到历史记录
+  const saveEditedMessageWithResponse = (messageId: string, originalMessage: ChatMessage, editedMessage: ChatMessage, aiResponse: ChatMessage) => {
+    console.log("保存编辑后消息及回复:", messageId, editedMessage, aiResponse);
+    
+    // 使用函数式更新确保获取最新状态
+    setMessageHistory(prevHistory => {
+      // 获取现有的历史记录，如果没有则创建新的
+      const existingEntry = prevHistory[messageId] || {
+        original: { ...originalMessage },
+        originalResponse: undefined,
+        edited: [] as ChatMessage[],
+        responses: [] as ChatMessage[]
+      };
+      
+      // 创建新的编辑历史数组和响应数组
+      const updatedEdited = [...existingEntry.edited, { ...editedMessage }];
+      const updatedResponses = [...existingEntry.responses, { ...aiResponse }];
+      
+      // 创建更新后的历史记录条目，确保类型正确
+      const updatedEntry: MessageHistoryEntry = {
+        original: existingEntry.original,
+        originalResponse: existingEntry.originalResponse,
+        edited: updatedEdited,
+        responses: updatedResponses
+      };
+      
+      console.log("更新后的历史记录条目:", updatedEntry);
+      
+      // 返回更新后的历史记录
+      const result: MessageHistoryState = {
+        ...prevHistory,
+        [messageId]: updatedEntry
+      };
+      
+      return result;
+    });
+    
+    // 更新索引到新添加的编辑版本
+    setMessageHistory(currentHistory => {
+      const editedLength = (currentHistory[messageId]?.edited.length || 0);
+      console.log(`消息 ${messageId} 的编辑历史长度: ${editedLength}`);
+      
+      // 更新当前历史索引状态
+      setCurrentHistoryIndex(prevIndices => ({
+        ...prevIndices,
+        [messageId]: editedLength - 1 // 指向最新添加的编辑
+      }));
+      
+      return currentHistory; // 不实际修改历史记录，只是为了触发更新
+    });
+  };
+
+  // 修改editMessage函数以使用新的辅助函数
   const editMessage = async (messageId: string, newContent: string) => {
     if (!activeConversation) return;
 
@@ -698,6 +893,23 @@ export function ChatProvider({ children }: Readonly<{ children: ReactNode }>) {
       // 确保这是用户消息
       const message = activeConversation.messages[messageIndex];
       if (!message.isUser) return;
+
+      // 查找这条消息后面的AI回复（如果有）
+      let aiResponse: ChatMessage | undefined;
+      if (messageIndex + 1 < activeConversation.messages.length && 
+          !activeConversation.messages[messageIndex + 1].isUser) {
+        aiResponse = activeConversation.messages[messageIndex + 1];
+        
+        // 当首次编辑时，保存原始消息和它的AI回复
+        if (!messageHistory[messageId]) {
+          console.log("首次编辑，保存原始消息和回复");
+          saveOriginalMessageWithResponse(messageId, message, aiResponse);
+        }
+      } else {
+        // 如果没有对应的AI回复，只保存原始消息
+        console.log("首次编辑，没有AI回复");
+        saveOriginalMessage(messageId, message);
+      }
 
       // 创建消息的更新副本
       const updatedMessage = { ...message, content: newContent };
@@ -722,16 +934,42 @@ export function ChatProvider({ children }: Readonly<{ children: ReactNode }>) {
         )
       );
 
-      // 直接生成新的 AI 响应
-      const aiResponseContent = await mockAIResponse(newContent, selectedModel);
+      // 使用真实API获取AI回复，而不是模拟回复
+      let response;
+      try {
+        // 根据当前会话的知识库设置选择查询方式
+        const conversationLibraries = JSON.parse(localStorage.getItem('conversationLibraries') || '{}');
+        const selectedLibraries = conversationLibraries[activeConversation.id] || [];
+        const useDirect = selectedLibraries.length === 0;
+        
+        if (useDirect) {
+          // 直接与AI对话
+          response = await queryApi.chat(newContent, activeConversation.id);
+        } else if (selectedLibraries.length === 1) {
+          // 查询单一知识库
+          response = await queryApi.query(
+            newContent,
+            selectedLibraries[0],
+            activeConversation.id
+          );
+        } else {
+          // 查询所有知识库
+          response = await queryApi.query(newContent, undefined, activeConversation.id);
+        }
+      } catch (error) {
+        console.error("Failed to get AI response:", error);
+        response = { 
+          answer: "Sorry, I couldn't generate a response. Please try again." 
+        };
+      }
 
       // 创建新的 AI 消息
       const newAiMessage: ChatMessage = {
-        id: Date.now().toString(), // 简单使用时间戳作为ID而不是UUID
-        content: aiResponseContent || "I'm not sure how to respond to that.",
+        id: Date.now().toString(),
+        content: response?.answer || "I'm not sure how to respond to that.",
         isUser: false,
         timestamp: new Date(),
-        // 注意：这是模拟回复，没有真实的sources数据
+        sources: processSourceInfo(response?.source_documents),
       };
 
       // 添加 AI 回复到会话中
@@ -747,9 +985,59 @@ export function ChatProvider({ children }: Readonly<{ children: ReactNode }>) {
           conv.id === activeConversation.id ? conversationWithResponse : conv
         )
       );
+
+      // 保存编辑后的消息和对应的AI回复到历史记录
+      saveEditedMessageWithResponse(messageId, message, updatedMessage, newAiMessage);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // 添加辅助函数以判断消息是否有导航历史
+  const hasMessageHistory = (messageId: string) => {
+    return !!messageHistory[messageId] && 
+          (messageHistory[messageId].edited.length > 0 || 
+           JSON.stringify(messageHistory[messageId].original) !== 
+           JSON.stringify(messageHistory[messageId].edited[messageHistory[messageId].edited.length - 1]));
+  };
+  
+  // 判断是否可以向后导航
+  const canNavigateMessageBackward = (messageId: string) => {
+    if (!messageHistory[messageId]) return false;
+    
+    const currentIndex = currentHistoryIndex[messageId] ?? 0;
+    return currentIndex > -1; // 可以后退到原始消息 (-1)
+  };
+  
+  // 判断是否可以向前导航
+  const canNavigateMessageForward = (messageId: string) => {
+    if (!messageHistory[messageId]) return false;
+    
+    const currentIndex = currentHistoryIndex[messageId] ?? 0;
+    return currentIndex < messageHistory[messageId].edited.length - 1;
+  };
+  
+  // 获取当前消息的版本信息（供UI显示）
+  const getMessageVersionInfo = (messageId: string) => {
+    if (!messageHistory[messageId]) {
+      return { current: 1, total: 1 }; // 没有历史记录时显示为 1/1
+    }
+    
+    const history = messageHistory[messageId];
+    const currentIndex = currentHistoryIndex[messageId] ?? 0;
+    const totalVersions = history.edited.length + 1; // 原始消息 + 所有编辑版本
+    
+    // 计算当前版本号
+    let currentVersion;
+    if (currentIndex === -1) {
+      currentVersion = 1; // 原始版本是第1版
+    } else {
+      currentVersion = currentIndex + 2; // 编辑版本从2开始
+    }
+    
+    console.log(`消息 ${messageId} 的版本信息: 当前=${currentVersion}, 总共=${totalVersions}`);
+    
+    return { current: currentVersion, total: totalVersions };
   };
 
   // Wrapped setter to validate model values
@@ -759,6 +1047,76 @@ export function ChatProvider({ children }: Readonly<{ children: ReactNode }>) {
       setSelectedLibraryState(libraryId);
     } else {
       console.warn(`Invalid model: ${libraryId}. Must be one of: ${validModels.join(', ')}`);
+    }
+  };
+
+  // Helper function to create a new conversation with an initial message
+  const createConversationWithMessage = async (content: string): Promise<Conversation> => {
+    try {
+      // 创建一个新的会话
+      const response = await conversationApi.create({
+        title: content.substring(0, 30) + (content.length > 30 ? "..." : ""),
+      });
+
+      if (!response || !response.conversation_id) {
+        throw new Error("Failed to create conversation: Invalid response");
+      }
+
+      const conversationId = response.conversation_id.toString();
+      
+      // 添加用户消息到会话
+      await conversationApi.addMessage(conversationId, {
+        content,
+        message_type: "user",
+      });
+
+      // 从后端获取完整会话（包含消息）
+      const conversationDetail = await conversationApi.get(conversationId);
+      
+      const messages = conversationDetail?.messages?.map((msg: any) => ({
+        id: msg.id.toString(),
+        content: msg.content,
+        isUser: msg.message_type === "user",
+        timestamp: new Date(msg.created_at),
+      })) || [{ 
+        id: Date.now().toString(),
+        content,
+        isUser: true,
+        timestamp: new Date()
+      }]; // 如果获取失败，使用本地创建的消息
+
+      return {
+        id: conversationId,
+        title: content.substring(0, 30) + (content.length > 30 ? "..." : ""),
+        messages,
+        files: [],
+        messageCount: messages.length,
+        createdAt: new Date(),
+      };
+    } catch (error) {
+      console.error("Failed to create conversation:", error);
+      throw error;
+    }
+  };
+
+  // Helper function to process source documents
+  const processSourceInfo = (sourceDocuments: any[] | undefined) => {
+    if (!sourceDocuments || !Array.isArray(sourceDocuments)) {
+      return undefined;
+    }
+    
+    try {
+      return sourceDocuments.map(doc => ({
+        document_name: doc.metadata?.source || doc.filename || 'Unknown source',
+        content_preview: doc.page_content || doc.content || '',
+        content: doc.page_content || doc.content || '',
+        page: doc.metadata?.page || undefined,
+        relevance_score: doc.score || undefined,
+        metadata: doc.metadata || {}
+      }));
+    } catch (error) {
+      console.error("Error processing source documents:", error);
+      return undefined;
     }
   };
 
@@ -780,6 +1138,13 @@ export function ChatProvider({ children }: Readonly<{ children: ReactNode }>) {
       selectedLibrary,
       setSelectedLibrary,
       editMessage,
+      messageHistory,
+      currentHistoryIndex,
+      navigateMessageHistory,
+      hasMessageHistory,
+      canNavigateMessageBackward,
+      canNavigateMessageForward,
+      getMessageVersionInfo,
     }),
     [
       conversations,
@@ -787,6 +1152,8 @@ export function ChatProvider({ children }: Readonly<{ children: ReactNode }>) {
       isLoading,
       selectedModel,
       selectedLibrary,
+      messageHistory,
+      currentHistoryIndex,
     ]
   );
 

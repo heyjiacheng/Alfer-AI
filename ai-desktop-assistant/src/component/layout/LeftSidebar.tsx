@@ -179,8 +179,9 @@ export default function LeftSidebar() {
                   letterSpacing: '0.2px',
                   fontSize: '0.90rem',
                   textTransform: 'capitalize',
-                  fontWeight: 500,
-                  opacity: 0.85
+                  fontWeight: 700,
+                  color: theme => theme.palette.mode === 'dark' ? '#CCCCCC' : '#444444',
+                  opacity: 1
                 }}>
                   New knowledge base
                 </Typography>
@@ -250,8 +251,9 @@ export default function LeftSidebar() {
                 letterSpacing: '0.2px',
                 fontSize: '0.90rem',
                 textTransform: 'capitalize',
-                fontWeight: 500,
-                opacity: 0.85
+                fontWeight: 700,
+                color: theme => theme.palette.mode === 'dark' ? '#CCCCCC' : '#444444',
+                opacity: 1
               }}>
                 New conversation
               </Typography>

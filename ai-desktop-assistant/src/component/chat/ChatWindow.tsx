@@ -35,6 +35,8 @@ import { alpha } from "@mui/material/styles";
 import CheckIcon from "@mui/icons-material/Check";
 import BlockIcon from "@mui/icons-material/Block";
 import FolderOutlinedIcon from "@mui/icons-material/FolderOutlined";
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 
 const CenteredBox = ({ children }: Readonly<{ children: React.ReactNode }>) => (
   <Box
@@ -60,6 +62,13 @@ export default function ChatWindow() {
     selectedLibrary,
     setSelectedLibrary,
     createNewConversation: contextCreateNewConversation,
+    messageHistory,
+    currentHistoryIndex,
+    navigateMessageHistory,
+    hasMessageHistory,
+    canNavigateMessageBackward,
+    canNavigateMessageForward,
+    getMessageVersionInfo
   } = useChat();
   const { libraries, documents } = useKnowledge();
   const [input, setInput] = useState("");
@@ -901,12 +910,17 @@ export default function ChatWindow() {
               },
             }}
           >
-            {activeConversation?.messages.map((message) => (
+            {activeConversation && activeConversation.messages.map((msg, index) => (
               <MessageBubble
-                key={message.id}
-                message={message}
-                isUser={message.isUser}
+                key={msg.id}
+                message={msg}
+                isUser={msg.isUser}
                 onViewSources={handleViewSources}
+                showHistoryNavigation={msg.isUser && hasMessageHistory(msg.id)}
+                onNavigateHistory={(direction) => navigateMessageHistory(msg.id, direction)}
+                canNavigateBackward={canNavigateMessageBackward(msg.id)}
+                canNavigateForward={canNavigateMessageForward(msg.id)}
+                versionInfo={getMessageVersionInfo(msg.id)}
               />
             ))}
             <div ref={messagesEndRef} />
