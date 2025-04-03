@@ -31,6 +31,12 @@ import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import CloseIcon from "@mui/icons-material/Close";
 import { Checkbox } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
+import { alpha } from "@mui/material/styles";
+import CheckIcon from "@mui/icons-material/Check";
+import BlockIcon from "@mui/icons-material/Block";
+import FolderOutlinedIcon from "@mui/icons-material/FolderOutlined";
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 
 const CenteredBox = ({ children }: Readonly<{ children: React.ReactNode }>) => (
   <Box
@@ -56,6 +62,13 @@ export default function ChatWindow() {
     selectedLibrary,
     setSelectedLibrary,
     createNewConversation: contextCreateNewConversation,
+    messageHistory,
+    currentHistoryIndex,
+    navigateMessageHistory,
+    hasMessageHistory,
+    canNavigateMessageBackward,
+    canNavigateMessageForward,
+    getMessageVersionInfo
   } = useChat();
   const { libraries, documents } = useKnowledge();
   const [input, setInput] = useState("");
@@ -76,6 +89,26 @@ export default function ChatWindow() {
   const theme = useTheme();
 
   const allLibraries = useMemo(() => libraries, [libraries]);
+
+  // 从本地存储加载对话的知识库选择
+  useEffect(() => {
+    const savedConversationLibraries = localStorage.getItem('conversationLibraries');
+    if (savedConversationLibraries) {
+      try {
+        const parsed = JSON.parse(savedConversationLibraries);
+        setConversationLibraries(parsed);
+      } catch (error) {
+        console.error('Failed to parse saved conversation libraries:', error);
+      }
+    }
+  }, []);
+
+  // 当conversationLibraries改变时，保存到本地存储
+  useEffect(() => {
+    if (Object.keys(conversationLibraries).length > 0) {
+      localStorage.setItem('conversationLibraries', JSON.stringify(conversationLibraries));
+    }
+  }, [conversationLibraries]);
 
   const getDocumentCount = (libId: string) => {
     return documents.filter((doc) => doc.libraryId === libId).length;
@@ -163,31 +196,31 @@ export default function ChatWindow() {
   }, [activeConversation?.messages]);
 
   const toggleLibrarySelection = (libraryId: string) => {
-    if (activeConversation) {
-      setSelectedLibraries((prev) => {
-        const newSelections = prev.includes(libraryId)
-          ? prev.filter((id) => id !== libraryId)
-          : [...prev, libraryId];
+    setSelectedLibraries((prev) => {
+      const newSelections = prev.includes(libraryId)
+        ? prev.filter((id) => id !== libraryId)
+        : [...prev, libraryId];
 
-        setConversationLibraries((currentMap) => ({
-          ...currentMap,
-          [activeConversation.id]: newSelections,
-        }));
+      // 如果有活动对话，则更新该对话的知识库选择
+      if (activeConversation) {
+        setConversationLibraries((currentMap) => {
+          const updated = {
+            ...currentMap,
+            [activeConversation.id]: newSelections,
+          };
+          // 保存到本地存储
+          localStorage.setItem('conversationLibraries', JSON.stringify(updated));
+          return updated;
+        });
+      }
 
-        return newSelections;
-      });
-    } else {
-      setSelectedLibraries((prev) =>
-        prev.includes(libraryId)
-          ? prev.filter((id) => id !== libraryId)
-          : [...prev, libraryId]
-      );
-    }
+      return newSelections;
+    });
   };
 
   const getSelectedLibrariesDisplay = () => {
     if (selectedLibraries.length === 0) {
-      return "Knowledge Base";
+      return homeKnowledgeMenuOpen ? "" : "Knowledge Base";
     } else if (selectedLibraries.length === 1) {
       const lib = allLibraries.find((lib) => lib.id === selectedLibraries[0]);
       if (lib) {
@@ -195,7 +228,7 @@ export default function ChatWindow() {
           ? `${lib.name.substring(0, 8)}...`
           : lib.name;
       }
-      return "Knowledge Base";
+      return homeKnowledgeMenuOpen ? "" : "Knowledge Base";
     } else {
       return `${selectedLibraries.length} Knowledge Bases`;
     }
@@ -283,10 +316,15 @@ export default function ChatWindow() {
     conversationId: string,
     libraries: string[]
   ) => {
-    setConversationLibraries((prev) => ({
-      ...prev,
-      [conversationId]: libraries,
-    }));
+    setConversationLibraries((prev) => {
+      const updated = {
+        ...prev,
+        [conversationId]: libraries,
+      };
+      // 保存到本地存储
+      localStorage.setItem('conversationLibraries', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const handleViewSources = (sources: ChatMessage['sources']) => {
@@ -319,7 +357,7 @@ export default function ChatWindow() {
     >
       {!activeConversation ? (
         <CenteredBox>
-          <Typography variant="h3" gutterBottom sx={{ fontWeight: 600, mb: 4 }}>
+          <Typography variant="h3" gutterBottom sx={{ fontFamily: '"Sora", sans-serif', fontWeight: 600, mb: 4 }}>
             Álfer AI Assistant
           </Typography>
           <Box sx={{ width: "100%", maxWidth: 850, px: 2 }}>
@@ -365,7 +403,8 @@ export default function ChatWindow() {
                   '& .MuiInputBase-inputMultiline': {
                     py: 0.7,
                     px: 1.5,
-                    lineHeight: 1.3
+                    lineHeight: 1.3,
+                    fontFamily: '"Space Mono", monospace'
                   }
                 }}
                 InputProps={{
@@ -411,7 +450,8 @@ export default function ChatWindow() {
                     },
                     borderRadius: 8,
                     paddingLeft: '6px',
-                    paddingRight: '6px'
+                    paddingRight: '6px',
+                    fontFamily: '"Space Mono", monospace'
                   },
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 3,
@@ -433,7 +473,8 @@ export default function ChatWindow() {
                       fontSize: '0.85rem',
                       pointerEvents: 'none',
                       zIndex: 1,
-                      borderRadius: 8
+                      borderRadius: 8,
+                      fontFamily: '"Space Mono", monospace'
                     }}
                   >
                     AI Model
@@ -482,7 +523,9 @@ export default function ChatWindow() {
                         flex: '1',
                         textAlign: 'left',
                         pl: 0.5,
+                        pr: 1.5,
                         color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+                        fontFamily: '"Space Mono", monospace'
                       }}
                     >
                       {selectedLibrary === "deepseek-r1" ? "DeepSeek R1" : selectedLibrary}
@@ -495,11 +538,30 @@ export default function ChatWindow() {
                     anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
                     transformOrigin={{ vertical: "top", horizontal: "left" }}
                     sx={{ 
-                      mt: 1,
-                      '& .MuiMenuItem-root.Mui-selected': {
-                        backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
+                      '& .MuiPaper-root': {
+                        borderRadius: 2,
+                        backgroundColor: theme => alpha(theme.palette.background.paper, 0.75),
+                        backdropFilter: 'blur(10px)',
+                        boxShadow: '0 8px 16px rgba(0,0,0,0.08)',
+                        overflow: 'hidden',
+                        minWidth: '200px'
+                      },
+                      '& .MuiMenuItem-root': {
+                        fontFamily: '"Space Mono", monospace',
+                        padding: '8px 16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 2,
+                        width: '100%',
+                        boxSizing: 'border-box',
                         '&:hover': {
-                          backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)',
+                          backgroundColor: theme => alpha(theme.palette.action.hover, 0.1)
+                        }
+                      },
+                      '& .MuiMenuItem-root.Mui-selected': {
+                        backgroundColor: theme => alpha(theme.palette.action.selected, 0.1),
+                        '&:hover': {
+                          backgroundColor: theme => alpha(theme.palette.action.selected, 0.2),
                         }
                       }
                     }}
@@ -511,7 +573,24 @@ export default function ChatWindow() {
                       }}
                       selected={selectedLibrary === "deepseek-r1"}
                     >
-                      DeepSeek R1
+                      <Box sx={{ 
+                        width: 24, 
+                        height: 24, 
+                        borderRadius: '50%', 
+                        bgcolor: 'primary.light',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                        fontSize: '0.75rem',
+                        fontWeight: 'bold'
+                      }}>
+                        DS
+                      </Box>
+                      <Typography sx={{ flex: 1 }}>DeepSeek R1</Typography>
+                      {selectedLibrary === "deepseek-r1" && (
+                        <CheckIcon fontSize="small" sx={{ color: 'success.main' }} />
+                      )}
                     </MenuItem>
                     <MenuItem
                       onClick={() => {
@@ -520,7 +599,24 @@ export default function ChatWindow() {
                       }}
                       selected={selectedLibrary === "gpt-4"}
                     >
-                      GPT-4
+                      <Box sx={{ 
+                        width: 24, 
+                        height: 24, 
+                        borderRadius: '50%', 
+                        bgcolor: '#10A37F',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                        fontSize: '0.75rem',
+                        fontWeight: 'bold'
+                      }}>
+                        G4
+                      </Box>
+                      <Typography sx={{ flex: 1 }}>GPT-4</Typography>
+                      {selectedLibrary === "gpt-4" && (
+                        <CheckIcon fontSize="small" sx={{ color: 'success.main' }} />
+                      )}
                     </MenuItem>
                     <MenuItem
                       onClick={() => {
@@ -529,7 +625,24 @@ export default function ChatWindow() {
                       }}
                       selected={selectedLibrary === "claude-2"}
                     >
-                      Claude 2
+                      <Box sx={{ 
+                        width: 24, 
+                        height: 24, 
+                        borderRadius: '50%', 
+                        bgcolor: '#5436DA',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                        fontSize: '0.75rem',
+                        fontWeight: 'bold'
+                      }}>
+                        C2
+                      </Box>
+                      <Typography sx={{ flex: 1 }}>Claude 2</Typography>
+                      {selectedLibrary === "claude-2" && (
+                        <CheckIcon fontSize="small" sx={{ color: 'success.main' }} />
+                      )}
                     </MenuItem>
                     <MenuItem
                       onClick={() => {
@@ -538,7 +651,24 @@ export default function ChatWindow() {
                       }}
                       selected={selectedLibrary === "gemini"}
                     >
-                      Gemini
+                      <Box sx={{ 
+                        width: 24, 
+                        height: 24, 
+                        borderRadius: '50%', 
+                        bgcolor: '#8E44AD',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                        fontSize: '0.75rem',
+                        fontWeight: 'bold'
+                      }}>
+                        GM
+                      </Box>
+                      <Typography sx={{ flex: 1 }}>Gemini</Typography>
+                      {selectedLibrary === "gemini" && (
+                        <CheckIcon fontSize="small" sx={{ color: 'success.main' }} />
+                      )}
                     </MenuItem>
                   </Menu>
                 </FormControl>
@@ -559,7 +689,8 @@ export default function ChatWindow() {
                     },
                     borderRadius: 8,
                     paddingLeft: '6px',
-                    paddingRight: '6px'
+                    paddingRight: '6px',
+                    fontFamily: '"Space Mono", monospace'
                   },
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 3,
@@ -581,7 +712,8 @@ export default function ChatWindow() {
                       fontSize: '0.85rem',
                       pointerEvents: 'none',
                       zIndex: 1,
-                      borderRadius: 8
+                      borderRadius: 8,
+                      fontFamily: '"Space Mono", monospace'
                     }}
                   >
                     Knowledge Base
@@ -630,8 +762,10 @@ export default function ChatWindow() {
                         flex: '1',
                         textAlign: 'left',
                         pl: 0.5,
+                        pr: 1.5,
+                        width: '100%',
                         color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
-                        visibility: selectedLibraries.length > 0 ? 'visible' : 'hidden'
+                        fontFamily: '"Space Mono", monospace'
                       }}
                     >
                       {getSelectedLibrariesDisplay()}
@@ -644,91 +778,154 @@ export default function ChatWindow() {
                     anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
                     transformOrigin={{ vertical: "top", horizontal: "left" }}
                     sx={{ 
-                      mt: 1,
-                      '& .MuiMenuItem-root.Mui-selected': {
-                        backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
+                      '& .MuiPaper-root': {
+                        borderRadius: 2,
+                        backgroundColor: theme => alpha(theme.palette.background.paper, 0.75),
+                        backdropFilter: 'blur(10px)',
+                        boxShadow: '0 8px 16px rgba(0,0,0,0.08)',
+                        overflow: 'hidden',
+                        minWidth: '220px',
+                        width: '240px',
+                        height: 'auto',
+                        maxHeight: '320px',
+                        display: 'flex',
+                        flexDirection: 'column'
+                      },
+                      '& .MuiList-root': {
+                        padding: 0
+                      },
+                      '& .MuiMenuItem-root': {
+                        fontFamily: '"Space Mono", monospace',
+                        padding: '8px 16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 2,
+                        width: '100%',
+                        boxSizing: 'border-box',
                         '&:hover': {
-                          backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)',
+                          backgroundColor: theme => alpha(theme.palette.action.hover, 0.1)
                         }
                       },
-                      '& .MuiCheckbox-root.Mui-checked': {
-                        color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)',
+                      '& .MuiMenuItem-root.Mui-selected': {
+                        backgroundColor: theme => alpha(theme.palette.action.selected, 0.1),
+                        '&:hover': {
+                          backgroundColor: theme => alpha(theme.palette.action.selected, 0.2),
+                        }
+                      }
+                    }}
+                    PaperProps={{
+                      style: { 
+                        maxHeight: '320px'
                       }
                     }}
                   >
-                    <MenuItem
-                      onClick={() => {
-                        if (activeConversation) {
-                          setSelectedLibraries([]);
-                        } else {
-                          setSelectedLibraries([]);
-                        }
-                        setHomeKnowledgeMenuOpen(false);
-                      }}
-                    >
-                      <Box sx={{ display: "flex", alignItems: "center" }}>
-                        <Checkbox
-                          checked={selectedLibraries.length === 0}
-                          size="small"
-                          sx={{ p: 0.5, mr: 1 }}
-                        />
-                        <Typography>No Knowledge Base</Typography>
-                      </Box>
-                    </MenuItem>
-                    {allLibraries.map((lib) => (
+                    {/* Scrollable section with all knowledge base options */}
+                    <Box sx={{ 
+                      overflowY: 'auto', 
+                      height: '250px', 
+                      flex: '1 0 auto',
+                      '&::-webkit-scrollbar': {
+                        width: '4px',
+                      },
+                      '&::-webkit-scrollbar-track': {
+                        background: 'transparent',
+                      },
+                      '&::-webkit-scrollbar-thumb': {
+                        background: theme => alpha(theme.palette.text.secondary, 0.15),
+                        borderRadius: '4px',
+                      },
+                      '&::-webkit-scrollbar-thumb:hover': {
+                        background: theme => alpha(theme.palette.text.secondary, 0.25),
+                      }
+                    }}>
                       <MenuItem
-                        key={lib.id}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleLibrarySelection(lib.id);
+                        onClick={() => {
+                          setSelectedLibraries([]);
+                          setHomeKnowledgeMenuOpen(false);
                         }}
-                        sx={{ maxWidth: 250 }}
                       >
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            width: "100%",
-                            overflow: "hidden",
+                        <Box sx={{ 
+                          width: 24, 
+                          height: 24, 
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: theme => alpha(theme.palette.text.secondary, 0.7)
+                        }}>
+                          <BlockIcon fontSize="small" />
+                        </Box>
+                        <Typography noWrap sx={{ flex: 1, opacity: 0.8, width: '170px' }}>No Knowledge Base</Typography>
+                        {selectedLibraries.length === 0 && (
+                          <CheckIcon fontSize="small" sx={{ color: 'success.main' }} />
+                        )}
+                      </MenuItem>
+
+                      {allLibraries.map((lib) => (
+                        <MenuItem
+                          key={lib.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleLibrarySelection(lib.id);
                           }}
                         >
-                          <Checkbox
-                            checked={selectedLibraries.includes(lib.id)}
-                            size="small"
-                            sx={{ p: 0.5, mr: 1, flexShrink: 0 }}
-                          />
-                          <Typography
-                            noWrap
-                            sx={{
-                              flexGrow: 1,
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              maxWidth: 140,
-                            }}
-                          >
-                            {lib.name}
-                          </Typography>
-                          <Typography
-                            variant="caption"
-                            sx={{ ml: 1, flexShrink: 0 }}
-                          >
-                            ({getDocumentCount(lib.id)} files)
-                          </Typography>
-                        </Box>
-                      </MenuItem>
-                    ))}
+                          <Box sx={{ 
+                            width: 24, 
+                            height: 24, 
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.65)' : 'rgba(0, 0, 0, 0.55)'
+                          }}>
+                            <FolderOutlinedIcon fontSize="small" />
+                          </Box>
+                          <Box sx={{ flex: 1, overflow: 'hidden' }}>
+                            <Typography noWrap sx={{ display: 'block', width: '170px' }}>
+                              {lib.name}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                              {getDocumentCount(lib.id)} files
+                            </Typography>
+                          </Box>
+                          {selectedLibraries.includes(lib.id) && (
+                            <CheckIcon fontSize="small" sx={{ color: 'success.main' }} />
+                          )}
+                        </MenuItem>
+                      ))}
+                    </Box>
+
+                    {/* Fixed footer - Confirm button */}
                     <Box
-                      sx={{ p: 1, display: "flex", justifyContent: "flex-end" }}
+                      sx={{ 
+                        p: 1, 
+                        display: "flex", 
+                        justifyContent: "flex-end", 
+                        position: 'relative',
+                        backgroundColor: 'inherit',
+                        backdropFilter: 'inherit',
+                        width: '100%',
+                        boxSizing: 'border-box',
+                        zIndex: 1,
+                        height: '50px',
+                        flex: '0 0 auto'
+                      }}
                     >
                       <Button
                         variant="contained"
                         size="small"
                         onClick={() => setHomeKnowledgeMenuOpen(false)}
                         sx={{ 
-                          mt: 1,
-                          backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)',
+                          fontFamily: '"Space Mono", monospace',
+                          textTransform: 'none',
+                          backgroundColor: theme => alpha(theme.palette.primary.main, 0.6),
+                          height: '32px',
+                          minWidth: '80px',
+                          alignSelf: 'center',
+                          position: 'absolute',
+                          right: '12px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
                           '&:hover': {
-                            backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
+                            backgroundColor: theme => alpha(theme.palette.primary.main, 0.75),
                           }
                         }}
                       >
@@ -766,12 +963,17 @@ export default function ChatWindow() {
               },
             }}
           >
-            {activeConversation?.messages.map((message) => (
+            {activeConversation && activeConversation.messages.map((msg, index) => (
               <MessageBubble
-                key={message.id}
-                message={message}
-                isUser={message.isUser}
+                key={msg.id}
+                message={msg}
+                isUser={msg.isUser}
                 onViewSources={handleViewSources}
+                showHistoryNavigation={msg.isUser && hasMessageHistory(msg.id)}
+                onNavigateHistory={(direction) => navigateMessageHistory(msg.id, direction)}
+                canNavigateBackward={canNavigateMessageBackward(msg.id)}
+                canNavigateForward={canNavigateMessageForward(msg.id)}
+                versionInfo={getMessageVersionInfo(msg.id)}
               />
             ))}
             <div ref={messagesEndRef} />
@@ -824,6 +1026,7 @@ export default function ChatWindow() {
                   px: 1.5,
                   lineHeight: 1.4,
                   fontSize: '0.95rem',
+                  fontFamily: '"Space Mono", monospace'
                 }
               }}
               disabled={isLoading}
@@ -888,7 +1091,8 @@ export default function ChatWindow() {
                       lineHeight: 1,
                       flex: '1',
                       textAlign: 'left',
-                      color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)'
+                      color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+                      fontFamily: '"Space Mono", monospace'
                     }}
                   >
                     {["deepseek-r1", "gpt-4", "claude-2", "gemini"].includes(selectedLibrary)
@@ -900,11 +1104,33 @@ export default function ChatWindow() {
                   anchorEl={modelButtonRef.current}
                   open={modelMenuOpen}
                   onClose={() => setModelMenuOpen(false)}
-                  sx={{
-                    '& .MuiMenuItem-root.Mui-selected': {
-                      backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
+                  anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+                  transformOrigin={{ vertical: "top", horizontal: "left" }}
+                  sx={{ 
+                    '& .MuiPaper-root': {
+                      borderRadius: 2,
+                      backgroundColor: theme => alpha(theme.palette.background.paper, 0.75),
+                      backdropFilter: 'blur(10px)',
+                      boxShadow: '0 8px 16px rgba(0,0,0,0.08)',
+                      overflow: 'hidden',
+                      minWidth: '200px'
+                    },
+                    '& .MuiMenuItem-root': {
+                      fontFamily: '"Space Mono", monospace',
+                      padding: '8px 16px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 2,
+                      width: '100%',
+                      boxSizing: 'border-box',
                       '&:hover': {
-                        backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)',
+                        backgroundColor: theme => alpha(theme.palette.action.hover, 0.1)
+                      }
+                    },
+                    '& .MuiMenuItem-root.Mui-selected': {
+                      backgroundColor: theme => alpha(theme.palette.action.selected, 0.1),
+                      '&:hover': {
+                        backgroundColor: theme => alpha(theme.palette.action.selected, 0.2),
                       }
                     }
                   }}
@@ -916,7 +1142,24 @@ export default function ChatWindow() {
                     }}
                     selected={selectedLibrary === "deepseek-r1"}
                   >
-                    DeepThink (R1)
+                    <Box sx={{ 
+                      width: 24, 
+                      height: 24, 
+                      borderRadius: '50%', 
+                      bgcolor: 'primary.light',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'white',
+                      fontSize: '0.75rem',
+                      fontWeight: 'bold'
+                    }}>
+                      DS
+                    </Box>
+                    <Typography sx={{ flex: 1 }}>DeepSeek R1</Typography>
+                    {selectedLibrary === "deepseek-r1" && (
+                      <CheckIcon fontSize="small" sx={{ color: 'success.main' }} />
+                    )}
                   </MenuItem>
                   <MenuItem
                     onClick={() => {
@@ -925,7 +1168,24 @@ export default function ChatWindow() {
                     }}
                     selected={selectedLibrary === "gpt-4"}
                   >
-                    GPT-4
+                    <Box sx={{ 
+                      width: 24, 
+                      height: 24, 
+                      borderRadius: '50%', 
+                      bgcolor: '#10A37F',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'white',
+                      fontSize: '0.75rem',
+                      fontWeight: 'bold'
+                    }}>
+                      G4
+                    </Box>
+                    <Typography sx={{ flex: 1 }}>GPT-4</Typography>
+                    {selectedLibrary === "gpt-4" && (
+                      <CheckIcon fontSize="small" sx={{ color: 'success.main' }} />
+                    )}
                   </MenuItem>
                   <MenuItem
                     onClick={() => {
@@ -934,7 +1194,24 @@ export default function ChatWindow() {
                     }}
                     selected={selectedLibrary === "claude-2"}
                   >
-                    Claude 2
+                    <Box sx={{ 
+                      width: 24, 
+                      height: 24, 
+                      borderRadius: '50%', 
+                      bgcolor: '#5436DA',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'white',
+                      fontSize: '0.75rem',
+                      fontWeight: 'bold'
+                    }}>
+                      C2
+                    </Box>
+                    <Typography sx={{ flex: 1 }}>Claude 2</Typography>
+                    {selectedLibrary === "claude-2" && (
+                      <CheckIcon fontSize="small" sx={{ color: 'success.main' }} />
+                    )}
                   </MenuItem>
                   <MenuItem
                     onClick={() => {
@@ -943,7 +1220,24 @@ export default function ChatWindow() {
                     }}
                     selected={selectedLibrary === "gemini"}
                   >
-                    Gemini
+                    <Box sx={{ 
+                      width: 24, 
+                      height: 24, 
+                      borderRadius: '50%', 
+                      bgcolor: '#8E44AD',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'white',
+                      fontSize: '0.75rem',
+                      fontWeight: 'bold'
+                    }}>
+                      GM
+                    </Box>
+                    <Typography sx={{ flex: 1 }}>Gemini</Typography>
+                    {selectedLibrary === "gemini" && (
+                      <CheckIcon fontSize="small" sx={{ color: 'success.main' }} />
+                    )}
                   </MenuItem>
                 </Menu>
 
@@ -951,6 +1245,7 @@ export default function ChatWindow() {
                   ref={knowledgeButtonRef}
                   variant="outlined"
                   onClick={() => setKnowledgeMenuOpen(true)}
+                  endIcon={<ArrowDropDownIcon sx={{ color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }} />}
                   sx={{
                     borderRadius: 3,
                     textTransform: "none",
@@ -965,9 +1260,16 @@ export default function ChatWindow() {
                     color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
                     maxWidth: 150,
                     minWidth: 120,
+                    display: 'flex',
+                    justifyContent: 'space-between',
                     "&:hover": {
                       bgcolor: "background.default",
                       borderColor: "primary.main",
+                    },
+                    "& .MuiButton-endIcon": {
+                      flexShrink: 0,
+                      marginLeft: 'auto',
+                      color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)'
                     }
                   }}
                 >
@@ -978,7 +1280,8 @@ export default function ChatWindow() {
                       textOverflow: "ellipsis",
                       fontSize: "0.8rem",
                       lineHeight: 1,
-                      color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)'
+                      color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+                      fontFamily: '"Space Mono", monospace'
                     }}
                   >
                     {getSelectedLibrariesDisplay()}
@@ -988,111 +1291,158 @@ export default function ChatWindow() {
                   anchorEl={knowledgeButtonRef.current}
                   open={knowledgeMenuOpen}
                   onClose={() => setKnowledgeMenuOpen(false)}
+                  anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+                  transformOrigin={{ vertical: "top", horizontal: "left" }}
                   sx={{
-                    '& .MuiMenuItem-root.Mui-selected': {
-                      backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
+                    '& .MuiPaper-root': {
+                      borderRadius: 2,
+                      backgroundColor: theme => alpha(theme.palette.background.paper, 0.75),
+                      backdropFilter: 'blur(10px)',
+                      boxShadow: '0 8px 16px rgba(0,0,0,0.08)',
+                      overflow: 'hidden',
+                      minWidth: '220px',
+                      width: '240px',
+                      height: 'auto',
+                      maxHeight: '320px',
+                      display: 'flex',
+                      flexDirection: 'column'
+                    },
+                    '& .MuiList-root': {
+                      padding: 0
+                    },
+                    '& .MuiMenuItem-root': {
+                      fontFamily: '"Space Mono", monospace',
+                      padding: '8px 16px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 2,
+                      width: '100%',
+                      boxSizing: 'border-box',
                       '&:hover': {
-                        backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)',
+                        backgroundColor: theme => alpha(theme.palette.action.hover, 0.1)
                       }
                     },
-                    '& .MuiCheckbox-root.Mui-checked': {
-                      color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)',
+                    '& .MuiMenuItem-root.Mui-selected': {
+                      backgroundColor: theme => alpha(theme.palette.action.selected, 0.1),
+                      '&:hover': {
+                        backgroundColor: theme => alpha(theme.palette.action.selected, 0.2),
+                      }
                     }
                   }}
                 >
-                  <MenuItem
-                    onClick={() => {
-                      if (activeConversation) {
-                        setSelectedLibraries([]);
-                      } else {
-                        setSelectedLibraries([]);
-                      }
-                      setKnowledgeMenuOpen(false);
-                    }}
-                  >
-                    <Box sx={{ display: "flex", alignItems: "center" }}>
-                      <Checkbox
-                        checked={selectedLibraries.length === 0}
-                        size="small"
-                        sx={{ p: 0.5, mr: 1 }}
-                      />
-                      <Typography>Direct Chat</Typography>
-                      <Typography variant="caption" sx={{ ml: 1, color: 'text.secondary' }}>
-                        (No knowledge base)
-                      </Typography>
-                    </Box>
-                  </MenuItem>
+                  {/* Scrollable section with all knowledge base options */}
                   <Box sx={{ 
-                    px: 2, 
-                    py: 1, 
-                    borderBottom: '1px solid',
-                    borderColor: 'divider', 
-                    display: 'flex', 
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
+                    overflowY: 'auto', 
+                    height: '250px', 
+                    flex: '1 0 auto',
+                    '&::-webkit-scrollbar': {
+                      width: '4px',
+                    },
+                    '&::-webkit-scrollbar-track': {
+                      background: 'transparent',
+                    },
+                    '&::-webkit-scrollbar-thumb': {
+                      background: theme => alpha(theme.palette.text.secondary, 0.15),
+                      borderRadius: '4px',
+                    },
+                    '&::-webkit-scrollbar-thumb:hover': {
+                      background: theme => alpha(theme.palette.text.secondary, 0.25),
+                    }
                   }}>
-                    <Typography variant="caption" color="text.secondary">
-                      Choose knowledge base (can select multiple, will search all selected knowledge bases simultaneously)
-                    </Typography>
-                  </Box>
-                  {allLibraries.map((lib) => (
                     <MenuItem
-                      key={lib.id}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleLibrarySelection(lib.id);
-                      }}
-                      sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        maxWidth: "250px",
+                      onClick={() => {
+                        if (activeConversation) {
+                          setSelectedLibraries([]);
+                          // 更新并保存知识库选择
+                          updateConversationLibraries(activeConversation.id, []);
+                        } else {
+                          setSelectedLibraries([]);
+                        }
+                        setKnowledgeMenuOpen(false);
                       }}
                     >
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          width: "100%",
-                          overflow: "hidden",
+                      <Box sx={{ 
+                        width: 24, 
+                        height: 24, 
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: theme => alpha(theme.palette.text.secondary, 0.7)
+                      }}>
+                        <BlockIcon fontSize="small" />
+                      </Box>
+                      <Typography noWrap sx={{ flex: 1, opacity: 0.8, width: '170px' }}>No Knowledge Base</Typography>
+                      {selectedLibraries.length === 0 && (
+                        <CheckIcon fontSize="small" sx={{ color: 'success.main' }} />
+                      )}
+                    </MenuItem>
+
+                    {allLibraries.map((lib) => (
+                      <MenuItem
+                        key={lib.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleLibrarySelection(lib.id);
                         }}
                       >
-                        <Checkbox
-                          checked={selectedLibraries.includes(lib.id)}
-                          size="small"
-                          sx={{ p: 0.5, mr: 1, flexShrink: 0 }}
-                        />
-                        <Typography
-                          noWrap
-                          sx={{
-                            flexGrow: 1,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            maxWidth: "140px",
-                          }}
-                        >
-                          {lib.name}
-                        </Typography>
-                        <Typography
-                          variant="caption"
-                          sx={{ ml: 1, flexShrink: 0 }}
-                        >
-                          ({getDocumentCount(lib.id)} files)
-                        </Typography>
-                      </Box>
-                    </MenuItem>
-                  ))}
+                        <Box sx={{ 
+                          width: 24, 
+                          height: 24, 
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: theme => alpha(theme.palette.text.secondary, 0.7)
+                        }}>
+                          <FolderOutlinedIcon fontSize="small" />
+                        </Box>
+                        <Box sx={{ flex: 1, overflow: 'hidden' }}>
+                          <Typography noWrap sx={{ display: 'block', width: '170px' }}>
+                            {lib.name}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                            {getDocumentCount(lib.id)} files
+                          </Typography>
+                        </Box>
+                        {selectedLibraries.includes(lib.id) && (
+                          <CheckIcon fontSize="small" sx={{ color: 'success.main' }} />
+                        )}
+                      </MenuItem>
+                    ))}
+                  </Box>
+
+                  {/* Fixed footer - Confirm button */}
                   <Box
-                    sx={{ p: 1, display: "flex", justifyContent: "flex-end" }}
+                    sx={{ 
+                      p: 1, 
+                      display: "flex", 
+                      justifyContent: "flex-end", 
+                      position: 'relative',
+                      backgroundColor: 'inherit',
+                      backdropFilter: 'inherit',
+                      width: '100%',
+                      boxSizing: 'border-box',
+                      zIndex: 1,
+                      height: '50px',
+                      flex: '0 0 auto'
+                    }}
                   >
                     <Button
                       variant="contained"
                       size="small"
                       onClick={() => setKnowledgeMenuOpen(false)}
                       sx={{ 
-                        mt: 1,
-                        backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)',
+                        fontFamily: '"Space Mono", monospace',
+                        textTransform: 'none',
+                        backgroundColor: theme => alpha(theme.palette.primary.main, 0.6),
+                        height: '32px',
+                        minWidth: '80px',
+                        alignSelf: 'center',
+                        position: 'absolute',
+                        right: '12px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
                         '&:hover': {
-                          backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
+                          backgroundColor: theme => alpha(theme.palette.primary.main, 0.75),
                         }
                       }}
                     >

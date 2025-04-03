@@ -1,7 +1,9 @@
-import { Box, Button, IconButton, Typography, alpha, useMediaQuery, useTheme as useMuiTheme } from '@mui/material';
+import { Box, Button, IconButton, Typography, alpha, useMediaQuery, useTheme as useMuiTheme, Divider } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import MenuIcon from '@mui/icons-material/Menu';
+import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
+import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import { useKnowledge } from '../../contexts/KnowledgeContext';
 import KnowledgeBase from '../knowledge/KnowledgeBase';
 import ChatHistory from '../../component/chat/ChatHistory.tsx';
@@ -137,7 +139,7 @@ export default function LeftSidebar() {
                 alt="Logo" 
                 style={{ height: 36, width: 36 }} 
               />
-              <Typography variant="h6" component="div">
+              <Typography variant="h6" component="div" sx={{ fontFamily: '"Sora", sans-serif' }}>
                 Álfer AI
               </Typography>
             </Box>
@@ -146,39 +148,52 @@ export default function LeftSidebar() {
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              width: '100%'
+              width: '100%',
+              mb: 0.25
             }}>
               <Button
                 fullWidth
-                variant="contained"
+                variant="text"
                 onClick={() => setModalOpen(true)}
                 sx={{ 
                   py: 0.5,
+                  mt: 0.5,
+                  mb: 0,
                   borderRadius: 2,
-                  bgcolor: 'rgba(0, 0, 0, 0.1)',
+                  bgcolor: 'transparent',
                   color: 'text.primary',
                   boxShadow: 'none',
                   textAlign: 'left',
                   justifyContent: 'flex-start',
                   pl: 2,
-                  border: '1px solid',
-                  borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.25)' : 'rgba(0, 0, 0, 0.15)',
+                  border: 'none',
                   '&:hover': {
-                    bgcolor: 'rgba(0, 0, 0, 0.15)',
+                    bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
                     boxShadow: 'none',
-                    borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.35)' : 'rgba(0, 0, 0, 0.25)'
                   }
                 }}
+                startIcon={<FolderOutlinedIcon fontSize="small" />}
               >
                 <Typography sx={{ 
-                  fontFamily: '"Space Mono", monospace',
-                  letterSpacing: '0.5px',
-                  fontSize: '0.85rem'
+                  fontFamily: '"Sora", sans-serif',
+                  letterSpacing: '0.2px',
+                  fontSize: '0.90rem',
+                  textTransform: 'capitalize',
+                  fontWeight: 700,
+                  color: theme => theme.palette.mode === 'dark' ? '#CCCCCC' : '#444444',
+                  opacity: 1
                 }}>
-                  New Knowledge Base
+                  New knowledge base
                 </Typography>
               </Button>
             </Box>
+            
+            <Divider sx={{ 
+              mt: -0.25,
+              mb: 0.55,
+              opacity: 0.6,
+              bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'
+            }} />
           </Box>
 
           <Box sx={{ 
@@ -193,49 +208,64 @@ export default function LeftSidebar() {
               backgroundColor: theme => alpha(theme.palette.text.secondary, 0.1),
               borderRadius: '6px',
             },
-            mb: -0.5
+            mb: -0.5,
+            mt: -0.5,
+            pt: 0.5
           }}>
             <KnowledgeBase />
           </Box>
 
           <Box sx={{ 
             p: 2, 
-            pt: 1,
+            pt: 0.5,
+            pb: 0.5,
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center'
           }}>
             <Button
               fullWidth
-              variant="contained"
+              variant="text"
               onClick={createNewConversation}
               sx={{ 
                 py: 0.5,
+                mt: 0.5,
+                mb: 0.35,
                 borderRadius: 2,
-                bgcolor: 'rgba(0, 0, 0, 0.1)',
+                bgcolor: 'transparent',
                 color: 'text.primary',
                 boxShadow: 'none',
                 textAlign: 'left',
                 justifyContent: 'flex-start',
                 pl: 2,
-                border: '1px solid', 
-                borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.25)' : 'rgba(0, 0, 0, 0.15)',
+                border: 'none',
                 '&:hover': {
-                  bgcolor: 'rgba(0, 0, 0, 0.15)',
+                  bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
                   boxShadow: 'none',
-                  borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.35)' : 'rgba(0, 0, 0, 0.25)'
                 }
               }}
+              startIcon={<ChatBubbleOutlineIcon fontSize="small" />}
             >
               <Typography sx={{ 
-                fontFamily: '"Space Mono", monospace',
-                letterSpacing: '0.5px',
-                fontSize: '0.85rem'
+                fontFamily: '"Sora", sans-serif',
+                letterSpacing: '0.2px',
+                fontSize: '0.90rem',
+                textTransform: 'capitalize',
+                fontWeight: 700,
+                color: theme => theme.palette.mode === 'dark' ? '#CCCCCC' : '#444444',
+                opacity: 1
               }}>
-                New Conversation
+                New conversation
               </Typography>
             </Button>
           </Box>
+          
+          <Divider sx={{ 
+            mt: 0.55,
+            mb: 0.75,
+            opacity: 0.6,
+            bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'
+          }} />
 
           <Box sx={{ 
             height: '55%',

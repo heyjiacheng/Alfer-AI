@@ -146,7 +146,7 @@ export function KnowledgeProvider({
     try {
       const response = await knowledgeBaseApi.create({
         name,
-        description: description || 'Knowledge Base'
+        description: description || ''
       });
 
       const libraryId = response.knowledge_base_id.toString();
