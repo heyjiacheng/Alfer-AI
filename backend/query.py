@@ -254,7 +254,7 @@ def rerank_documents(query: str, docs: List[Document]) -> List[Document]:
         print(f"Error re-ranking documents: {str(e)}")
         return docs  # Return original document order if error
 
-def perform_query(input_query: str, kb_id: Optional[int] = None, kb_ids: Optional[List[int]] = None) -> Optional[Dict[str, Any]]:
+def perform_query(input_query: str, kb_id: Optional[int] = None, kb_ids: Optional[List[int]] = None, conversation_id: Optional[int] = None) -> Optional[Dict[str, Any]]:
     """
     Execute query and return answer and sources
     
@@ -262,6 +262,7 @@ def perform_query(input_query: str, kb_id: Optional[int] = None, kb_ids: Optiona
         input_query: User input query
         kb_id: Knowledge base ID (optional, single knowledge base query)
         kb_ids: Knowledge base ID list (optional, multiple knowledge base queries)
+        conversation_id: Conversation ID (optional, for including conversation history)
         
     Returns:
         Dict[str, Any]: Response object containing answer and source information, failure returns dictionary with error information
@@ -270,6 +271,18 @@ def perform_query(input_query: str, kb_id: Optional[int] = None, kb_ids: Optiona
         return {"error": "Query content cannot be empty", "detail": "Please provide a valid query"}
     
     try:
+        # Get conversation history if conversation_id is provided
+        conversation_history = None
+        if conversation_id:
+            try:
+                from db_utils import get_conversation
+                conversation = get_conversation(DB_PATH, conversation_id)
+                if conversation:
+                    conversation_history = conversation.get('messages', [])
+            except Exception as conv_error:
+                print(f"Error retrieving conversation history: {str(conv_error)}")
+                # Continue without conversation history
+        
         # Get model name from environment variable and try to match installed model
         import subprocess
         model_name = os.getenv('LLM_MODEL', 'deepseek-r1:14b')
@@ -306,12 +319,12 @@ def perform_query(input_query: str, kb_id: Optional[int] = None, kb_ids: Optiona
         # If kb_ids are provided, use multiple knowledge base query mode
         if kb_ids and len(kb_ids) > 0:
             print(f"Using multiple knowledge base query mode, Knowledge Base IDs: {kb_ids}")
-            return query_multiple_knowledge_bases(input_query, kb_ids, llm)
+            return query_multiple_knowledge_bases(input_query, kb_ids, llm, conversation_history)
                 
         # If no knowledge base ID is provided, use direct dialog mode
         if kb_id is None and (not kb_ids or len(kb_ids) == 0):
             print("No knowledge base ID provided, using direct dialog mode")
-            return direct_ai_chat(input_query, llm)
+            return direct_ai_chat(input_query, llm, kb_id, conversation_history)
         
         # Verify knowledge base ID (if provided)
         if kb_id is not None:
@@ -328,10 +341,10 @@ def perform_query(input_query: str, kb_id: Optional[int] = None, kb_ids: Optiona
             # Check if vector database is empty
             if hasattr(db, '_collection') and db._collection.count() == 0:
                 print(f"Knowledge base {kb_id} is empty, switching to direct dialog mode")
-                return direct_ai_chat(input_query, llm, kb_id)
+                return direct_ai_chat(input_query, llm, kb_id, conversation_history)
         except Exception as db_error:
             print(f"Error getting vector database: {str(db_error)}, switching to direct dialog mode")
-            return direct_ai_chat(input_query, llm, kb_id)
+            return direct_ai_chat(input_query, llm, kb_id, conversation_history)
         
         # Get prompt templates
         query_prompt, answer_prompt = get_prompt()
@@ -345,18 +358,18 @@ def perform_query(input_query: str, kb_id: Optional[int] = None, kb_ids: Optiona
             )
         except Exception as retriever_error:
             print(f"Error creating retriever: {str(retriever_error)}, switching to direct dialog mode")
-            return direct_ai_chat(input_query, llm, kb_id)
+            return direct_ai_chat(input_query, llm, kb_id, conversation_history)
         
         # Execute retrieval to get relevant documents
         try:
             retrieved_docs = retriever.get_relevant_documents(input_query)
         except Exception as retrieve_error:
             print(f"Error retrieving documents: {str(retrieve_error)}, switching to direct dialog mode")
-            return direct_ai_chat(input_query, llm, kb_id)
+            return direct_ai_chat(input_query, llm, kb_id, conversation_history)
         
         if not retrieved_docs:
             print("No relevant documents found, switching to direct dialog mode")
-            return direct_ai_chat(input_query, llm, kb_id)
+            return direct_ai_chat(input_query, llm, kb_id, conversation_history)
         
         # Re-rank documents to improve relevance
         reranked_docs = rerank_documents(input_query, retrieved_docs)
@@ -385,16 +398,35 @@ def perform_query(input_query: str, kb_id: Optional[int] = None, kb_ids: Optiona
         if not relevant_sources:
             print("No high relevance documents found, using AI to directly answer the question")
             try:
-                direct_prompt = ChatPromptTemplate.from_template("""You are an AI assistant from a sweden company named Alfer-AI. 
-                Your task is to answer the question based on your knowledge.
-                If you don't know the answer, just say you don't have enough information.
+                # Create a conversation-aware prompt
+                if conversation_history:
+                    print("Using conversation history for direct answer")
+                    chat_history = format_conversation_history(conversation_history)
+                    direct_prompt = ChatPromptTemplate.from_template("""You are an AI assistant from a sweden company named Alfer-AI. 
+                    Your task is to answer the question based on your knowledge and the conversation history.
+                    If you don't know the answer, just say you don't have enough information.
+                    
+                    Conversation history:
+                    {chat_history}
+                    
+                    Current question: {question}
+                    
+                    Please provide a clear, professional answer with the language of the question:
+                    """)
+                    
+                    formatted_prompt = direct_prompt.format(chat_history=chat_history, question=input_query)
+                else:
+                    direct_prompt = ChatPromptTemplate.from_template("""You are an AI assistant from a sweden company named Alfer-AI. 
+                    Your task is to answer the question based on your knowledge.
+                    If you don't know the answer, just say you don't have enough information.
+                    
+                    Question: {question}
+                    
+                    Please provide a clear, professional answer with the language of the question:
+                    """)
+                    
+                    formatted_prompt = direct_prompt.format(question=input_query)
                 
-                Question: {question}
-                
-                Please provide a clear, professional answer with the language of the question:
-                """)
-                
-                formatted_prompt = direct_prompt.format(question=input_query)
                 raw_answer = llm.invoke(formatted_prompt).content
                 
                 response = {
@@ -418,9 +450,34 @@ def perform_query(input_query: str, kb_id: Optional[int] = None, kb_ids: Optiona
         # Use high relevance documents as context
         context = "\n\n".join([s["content"] for s in relevant_sources])
         
-        # Generate answer
+        # Generate answer with conversation history if available
         try:
-            formatted_prompt = answer_prompt.format(context=context, question=input_query)
+            if conversation_history:
+                print("Using conversation history for vector search answer")
+                chat_history = format_conversation_history(conversation_history)
+                conversation_answer_prompt = ChatPromptTemplate.from_template("""You are an AI assistant from a sweden company named Alfer-AI. 
+                Your task is to answer the question based on the context and conversation history below.
+                Provide a direct, concise answer.
+                
+                Conversation history:
+                {chat_history}
+                
+                Context:
+                {context}
+                
+                Current question: {question}
+                
+                Please provide a clear, professional answer with the language of the question:
+                """)
+                
+                formatted_prompt = conversation_answer_prompt.format(
+                    chat_history=chat_history, 
+                    context=context, 
+                    question=input_query
+                )
+            else:
+                formatted_prompt = answer_prompt.format(context=context, question=input_query)
+                
             raw_answer = llm.invoke(formatted_prompt).content
         except Exception as llm_error:
             print(f"Error generating answer: {str(llm_error)}")
@@ -449,7 +506,29 @@ def perform_query(input_query: str, kb_id: Optional[int] = None, kb_ids: Optiona
             "detail": str(e)
         }
 
-def query_multiple_knowledge_bases(input_query: str, kb_ids: List[int], llm) -> Dict[str, Any]:
+def format_conversation_history(messages: List[Dict[str, Any]]) -> str:
+    """
+    Format conversation history for inclusion in prompt
+    
+    Parameters:
+        messages: List of conversation messages
+        
+    Returns:
+        str: Formatted conversation history
+    """
+    if not messages:
+        return ""
+    
+    formatted_history = []
+    for msg in messages:
+        if msg.get('message_type') == 'user':
+            formatted_history.append(f"User: {msg.get('content', '')}")
+        elif msg.get('message_type') == 'assistant':
+            formatted_history.append(f"Assistant: {msg.get('content', '')}")
+    
+    return "\n".join(formatted_history)
+
+def query_multiple_knowledge_bases(input_query: str, kb_ids: List[int], llm, conversation_history: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
     """
     Query multiple knowledge bases and merge results
     
@@ -457,6 +536,7 @@ def query_multiple_knowledge_bases(input_query: str, kb_ids: List[int], llm) -> 
         input_query: User input query
         kb_ids: Knowledge base ID list
         llm: Language model instance
+        conversation_history: Conversation history (optional)
         
     Returns:
         Dict[str, Any]: Response object containing answer and merged source information
@@ -547,7 +627,7 @@ def query_multiple_knowledge_bases(input_query: str, kb_ids: List[int], llm) -> 
         # If no relevant sources found, use direct dialog mode
         if not all_sources:
             print("No relevant information found in all knowledge bases, using direct dialog mode")
-            return direct_ai_chat(input_query, llm)
+            return direct_ai_chat(input_query, llm, None, conversation_history)
         
         # Sort all sources by relevance score
         all_sources.sort(key=lambda x: x.get("relevance_score", 0), reverse=True)
@@ -560,21 +640,49 @@ def query_multiple_knowledge_bases(input_query: str, kb_ids: List[int], llm) -> 
         
         # Generate answer
         try:
-            # Use multiple knowledge base template
-            multi_kb_prompt = ChatPromptTemplate.from_template("""You are an AI assistant from a sweden company named Alfer-AI. 
-            Your task is to answer the question based on the context provided from multiple knowledge bases.
-            Synthesize information from all relevant sources to provide a comprehensive answer.
-            Make sure to consider information from all knowledge bases.
-            
-            Context:
-            {context}
-            
-            Question: {question}
-            
-            Please provide a clear, professional answer with the language of the question:
-            """)
-            
-            formatted_prompt = multi_kb_prompt.format(context=context, question=input_query)
+            # Use conversation history if available
+            if conversation_history:
+                print("Using conversation history for multi-knowledge base answer")
+                chat_history = format_conversation_history(conversation_history)
+                
+                multi_kb_prompt = ChatPromptTemplate.from_template("""You are an AI assistant from a sweden company named Alfer-AI. 
+                Your task is to answer the question based on the context provided from multiple knowledge bases and the conversation history.
+                Synthesize information from all relevant sources to provide a comprehensive answer.
+                Make sure to consider information from all knowledge bases.
+                
+                Conversation history:
+                {chat_history}
+                
+                Context:
+                {context}
+                
+                Current question: {question}
+                
+                Please provide a clear, professional answer with the language of the question:
+                """)
+                
+                formatted_prompt = multi_kb_prompt.format(
+                    chat_history=chat_history,
+                    context=context, 
+                    question=input_query
+                )
+            else:
+                # Use multiple knowledge base template without conversation history
+                multi_kb_prompt = ChatPromptTemplate.from_template("""You are an AI assistant from a sweden company named Alfer-AI. 
+                Your task is to answer the question based on the context provided from multiple knowledge bases.
+                Synthesize information from all relevant sources to provide a comprehensive answer.
+                Make sure to consider information from all knowledge bases.
+                
+                Context:
+                {context}
+                
+                Question: {question}
+                
+                Please provide a clear, professional answer with the language of the question:
+                """)
+                
+                formatted_prompt = multi_kb_prompt.format(context=context, question=input_query)
+                
             raw_answer = llm.invoke(formatted_prompt).content
             
             # Assemble final response
@@ -599,9 +707,9 @@ def query_multiple_knowledge_bases(input_query: str, kb_ids: List[int], llm) -> 
         print(f"Error querying multiple knowledge bases: {str(e)}")
         import traceback
         traceback.print_exc()
-        return direct_ai_chat(input_query, llm)
+        return direct_ai_chat(input_query, llm, None, conversation_history)
 
-def direct_ai_chat(input_query: str, llm, kb_id=None):
+def direct_ai_chat(input_query: str, llm, kb_id=None, conversation_history: Optional[List[Dict[str, Any]]] = None):
     """
     Use AI directly for dialog, without using knowledge base
     
@@ -609,22 +717,43 @@ def direct_ai_chat(input_query: str, llm, kb_id=None):
         input_query: User input query
         llm: Language model instance
         kb_id: Knowledge base ID (optional, only for recording)
+        conversation_history: Conversation history (optional)
         
     Returns:
         Dict[str, Any]: Response object containing answer
     """
     try:
-        # Use simple prompt template for direct dialog
-        direct_prompt = ChatPromptTemplate.from_template("""You are an AI assistant from a sweden company named Alfer-AI. 
-        Your task is to answer the question based on your knowledge.
-        If you don't know the answer, just say you don't have enough information.
+        # Use conversation-aware prompt if history is available
+        if conversation_history:
+            print("Using conversation history for direct chat")
+            chat_history = format_conversation_history(conversation_history)
+            
+            direct_prompt = ChatPromptTemplate.from_template("""You are an AI assistant from a sweden company named Alfer-AI. 
+            Your task is to answer the question based on your knowledge and the conversation history.
+            If you don't know the answer, just say you don't have enough information.
+            
+            Conversation history:
+            {chat_history}
+            
+            Current question: {question}
+            
+            Please provide a clear, professional answer with the language of the question:
+            """)
+            
+            formatted_prompt = direct_prompt.format(chat_history=chat_history, question=input_query)
+        else:
+            # Use simple prompt template for direct dialog without history
+            direct_prompt = ChatPromptTemplate.from_template("""You are an AI assistant from a sweden company named Alfer-AI. 
+            Your task is to answer the question based on your knowledge.
+            If you don't know the answer, just say you don't have enough information.
+            
+            Question: {question}
+            
+            Please provide a clear, professional answer with the language of the question:
+            """)
+            
+            formatted_prompt = direct_prompt.format(question=input_query)
         
-        Question: {question}
-        
-        Please provide a clear, professional answer with the language of the question:
-        """)
-        
-        formatted_prompt = direct_prompt.format(question=input_query)
         raw_answer = llm.invoke(formatted_prompt).content
         
         response = {

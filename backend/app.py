@@ -387,13 +387,13 @@ def route_query():
         # Prioritize multi-knowledge base mode, then single knowledge base mode, then direct conversation mode
         if valid_kb_ids and len(valid_kb_ids) > 0:
             print(f"Using multi-knowledge base query mode, knowledge base IDs: {valid_kb_ids}")
-            response = perform_query(user_query, None, valid_kb_ids)
+            response = perform_query(user_query, None, valid_kb_ids, conversation_id)
         elif kb_id is not None:
             print(f"Using single knowledge base query mode, knowledge base ID: {kb_id}")
-            response = perform_query(user_query, kb_id)
+            response = perform_query(user_query, kb_id, None, conversation_id)
         else:
             print("Using direct conversation mode")
-            response = perform_query(user_query)
+            response = perform_query(user_query, None, None, conversation_id)
         
         # Check if query failed
         if response and "error" in response:
@@ -452,7 +452,7 @@ def route_direct_chat():
                 return jsonify({"error": "invalid conversation id"}), 400
         
         # Directly call perform_query without providing kb_id, this will trigger direct conversation mode
-        response = perform_query(user_query)
+        response = perform_query(user_query, None, None, conversation_id)
         
         # Process conversation history
         if conversation_id:
@@ -478,7 +478,7 @@ def route_direct_chat():
         print(f"Direct conversation processing error: {str(e)}")
         import traceback
         traceback.print_exc()
-        return jsonify({"error": f"error with chat", "detail": str(e)}), 500
+        return jsonify({"error": f"error with direct chat", "detail": str(e)}), 500
 
 # Add a new route, simplify document upload
 @app.route('/upload/<int:kb_id>', methods=['POST'])
