@@ -6,6 +6,7 @@ import PDFViewer from '../document/PDFViewer';
 import { documentApi } from '../../services/api';
 import { useTheme } from '@mui/material/styles';
 import { useKnowledge } from '../../contexts/KnowledgeContext';
+import { KnowledgeLibrary } from '../../contexts/KnowledgeContext';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import { alpha } from '@mui/material/styles';
@@ -33,6 +34,7 @@ export default function SourceViewer({ sources }: SourceViewerProps) {
     page?: number;
     chunkText?: string;
   } | null>(null);
+  const { libraries: knowledgeBases } = useKnowledge();
 
   const [expanded, setExpanded] = useState(false);
 
@@ -234,21 +236,22 @@ export default function SourceViewer({ sources }: SourceViewerProps) {
 
   return (
     <Box sx={{ p: 1, height: '100%', overflow: 'auto' }}>
-      <Typography variant="h6" gutterBottom>
-        Reference sources ({sources.length})
-      </Typography>
       <List>
         {sources.map((source: Source, index) => (
           <React.Fragment key={index}>
             {index > 0 && <Divider variant="inset" component="li" />}
             <ListItem alignItems="flex-start" sx={{ flexDirection: 'column', py: 2 }}>
-              <Card variant="outlined" sx={{ width: '100%', mb: 1 }}>
+              <Card variant="outlined" sx={{ 
+                width: '100%', 
+                mb: 1,
+                borderRadius: 3,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                '&:hover': {
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                }
+              }}>
                 <CardContent sx={{ '&:last-child': { pb: 2 } }}>
-                  <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-                    {source?.document_name || 'Unknown document'}
-                  </Typography>
-                  
-                  <Box sx={{ display: 'flex', gap: 1, mb: 1, flexWrap: 'wrap' }}>
+                  <Box sx={{ display: 'flex', gap: 1, mb: 1.5, flexWrap: 'wrap' }}>
                     {((source?.page !== undefined) || (source?.page_label !== undefined) || 
                       (source?.metadata && (source.metadata.page !== undefined || source.metadata.page_label !== undefined))) && (
                       <Chip 
@@ -260,7 +263,8 @@ export default function SourceViewer({ sources }: SourceViewerProps) {
                           source?.page_label && source?.page && source.page_label !== source.page.toString() ? 
                           ` (internal: ${source.page})` : ''
                         }`} 
-                        variant="outlined" 
+                        variant="outlined"
+                        sx={{ borderRadius: 2 }}
                       />
                     )}
                     {source?.relevance_score !== undefined && (
@@ -270,31 +274,34 @@ export default function SourceViewer({ sources }: SourceViewerProps) {
                           ? source.relevance_score.toFixed(2) 
                           : source.relevance_score}`} 
                         variant="outlined" 
-                        color="primary"
-                      />
-                    )}
-                    {source?.metadata?.total_pages && (
-                      <Chip 
-                        size="small" 
-                        label={`Total pages: ${source.metadata.total_pages}`} 
-                        variant="outlined" 
+                        sx={{ 
+                          borderRadius: 2,
+                          color: 'text.secondary',
+                          borderColor: 'text.secondary'
+                        }}
                       />
                     )}
                     {source?.knowledge_base_id && (
                       <Chip 
                         size="small" 
-                        label={`Knowledge Base: ${source.knowledge_base_id}`}
-                        variant="outlined" 
+                        label={`Knowledge Base: ${
+                          knowledgeBases.find((kb: KnowledgeLibrary) => kb.id === source.knowledge_base_id?.toString())?.name || 
+                          source.knowledge_base_id
+                        }`}
+                        variant="outlined"
+                        sx={{ borderRadius: 2 }}
                       />
                     )}
                   </Box>
                   
                   <Typography variant="body2" color="text.secondary" sx={{ 
                     bgcolor: 'background.default', 
-                    p: 1, 
-                    borderRadius: 1,
+                    p: 1.5, 
+                    borderRadius: 2,
                     maxHeight: '150px',
-                    overflow: 'auto'
+                    overflow: 'auto',
+                    fontSize: '0.9rem',
+                    lineHeight: 1.5
                   }}>
                     {truncateContent(source?.content_preview || source?.content || '')}
                   </Typography>
@@ -305,8 +312,19 @@ export default function SourceViewer({ sources }: SourceViewerProps) {
                       size="small" 
                       variant="outlined"
                       onClick={() => handleDocumentClick(source)}
+                      sx={{ 
+                        borderRadius: 2,
+                        textTransform: 'none',
+                        fontSize: '0.85rem',
+                        color: 'text.secondary',
+                        borderColor: 'text.secondary',
+                        '&:hover': {
+                          borderColor: 'text.primary',
+                          color: 'text.primary'
+                        }
+                      }}
                     >
-                      View document
+                      View
                     </Button>
                   </Box>
                 </CardContent>
