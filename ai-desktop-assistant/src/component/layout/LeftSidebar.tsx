@@ -14,6 +14,7 @@ import CreateKnowledgeModal from '../knowledge/CreateKnowledgeModal';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useChat } from '../../contexts/ChatContext';
+import logo from '../../assets/logo-3.png';
 
 export default function LeftSidebar() {
   const { createLibrary } = useKnowledge();
@@ -135,9 +136,9 @@ export default function LeftSidebar() {
               }}
             >
               <img 
-                src="/logo.png" 
+                src={logo}
                 alt="Logo" 
-                style={{ height: 36, width: 36 }} 
+                style={{ height: 36, width: 53 }} 
               />
               <Typography variant="h6" component="div" sx={{ fontFamily: '"Sora", sans-serif' }}>
                 Álfer AI
