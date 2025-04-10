@@ -25,11 +25,7 @@ install Tauri CLI
 ```bash
 npm install --global @tauri-apps/cli
 ```
-install rest of packages
-```bash
-cd ai-desktop-assistant
-pnpm install
-```
+
 
 ## 🌟 Quick start
 ### start backend (in separate terminal)
@@ -41,6 +37,6 @@ python app.py
 ### start frontend (in separate terminal)
 ```bash
 cd ai-desktop-assistant
-npm install @react-pdf-viewer/zoom@3.12.0
+pnpm install
 pnpm tauri dev
 ```
