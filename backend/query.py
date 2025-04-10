@@ -14,6 +14,7 @@ from db_utils import get_db_connection
 # Use environment variables for configuration
 LLM_MODEL = os.getenv('LLM_MODEL', 'gemma3:latest')
 DB_PATH = os.getenv('DB_PATH', './documents.db')
+relevance_score = 60
 
 def get_prompt() -> tuple:
     """
@@ -211,7 +212,7 @@ def format_sources(retrieved_docs: List[Document], query_embedding=None, doc_emb
     if sources and sources[0].get("relevance_score") is not None:
         sources.sort(key=lambda x: x.get("relevance_score", 0), reverse=True)
         # Filter out sources with relevance score below 70
-        sources = [s for s in sources if s.get("relevance_score", 0) >= 70]
+        sources = [s for s in sources if s.get("relevance_score", 0) >= relevance_score]
     
     return sources
 
@@ -387,7 +388,7 @@ def perform_query(input_query: str, kb_id: Optional[int] = None, kb_ids: Optiona
             sources = format_sources(top_docs, query_embedding, doc_embeddings)
             
             # Filter out documents with relevance score below 70
-            relevant_sources = [s for s in sources if s.get("relevance_score", 0) >= 70]
+            relevant_sources = [s for s in sources if s.get("relevance_score", 0) >= relevance_score]
         except Exception as embed_error:
             print(f"Error calculating relevance score: {str(embed_error)}")
             # Continue without calculating relevance score
