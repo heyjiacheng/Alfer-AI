@@ -23,17 +23,17 @@ dist-ssr
 *.sln
 *.sw?
 
-# 临时文件夹
+# Temporary folders
 /_temp/
 
 /target/**
 
-# Python相关
+# Python related
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
 
-# 虚拟环境
+# Virtual environment
 venv/

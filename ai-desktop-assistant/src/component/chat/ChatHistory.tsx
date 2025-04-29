@@ -103,12 +103,15 @@ export default function ChatHistory({ hideNewConversationButton = false }: ChatH
               borderRadius: 2,
               py: 0.8,
               boxShadow: 'none',
+              border: '1px solid',
+              borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.05)',
               '&:hover': {
-                boxShadow: '0 2px 5px rgba(0,0,0,0.08)'
+                boxShadow: '0 2px 5px rgba(0,0,0,0.08)',
+                borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'
               }
             }}
             color="primary">
-              新建对话
+              New Conversation
           </Button>
         </Box>
       )}
@@ -147,7 +150,7 @@ export default function ChatHistory({ hideNewConversationButton = false }: ChatH
                     key={convo.id} 
                     disablePadding
                     sx={{
-                      mb: 0.5,
+                      mb: 0.01,
                     }}
                   >
                     <ListItemButton
@@ -156,11 +159,11 @@ export default function ChatHistory({ hideNewConversationButton = false }: ChatH
                       sx={{
                         borderRadius: 2,
                         transition: 'all 0.2s',
-                        py: 1.2,
+                        py: 0.6,
                         position: 'relative',
                         overflowX: 'hidden',
                         '&:hover': {
-                          backgroundColor: theme => alpha(theme.palette.action.hover, 0.5),
+                          backgroundColor: theme => alpha(theme.palette.action.hover, 0.15),
                           boxShadow: '0 1px 6px rgba(0,0,0,0.05)',
                           '& .action-buttons': {
                             opacity: 1,
@@ -168,9 +171,9 @@ export default function ChatHistory({ hideNewConversationButton = false }: ChatH
                           }
                         },
                         '&.Mui-selected': {
-                          backgroundColor: theme => alpha(theme.palette.primary.light, 0.08),
+                          backgroundColor: theme => alpha(theme.palette.action.hover, 0.15),
                           '&:hover': {
-                            backgroundColor: theme => alpha(theme.palette.primary.light, 0.15),
+                            backgroundColor: theme => alpha(theme.palette.action.hover, 0.15),
                           }
                         }
                       }}

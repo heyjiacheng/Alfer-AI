@@ -1,10 +1,166 @@
-# Backend_Red_Panda
+# Backend_Red_Panda Project Documentation
 
-## Environment Setup
+## Project Overview
 
-Install Ollama from the [official website](https://ollama.com/).
-Then download the required models (can be replaced in .env):
+Backend_Red_Panda is a knowledge base document management and query system that allows users to upload, manage documents, and perform semantic queries on these documents. The system utilizes vector databases and large language models to achieve intelligent understanding and response capabilities for documents.
 
+## System Architecture
+
+The project mainly consists of the following parts:
+
+1. **Web API Service**: RESTful API based on Flask framework
+2. **Document Processing System**: Responsible for document upload, text extraction, and embedding
+3. **Vector Database**: Stores semantic vector representations of documents
+4. **Query Processing System**: Processes user queries, retrieves relevant document fragments, and uses LLM to generate answers
+5. **Session Management System**: Stores and manages conversation history between users and the system
+
+## Core Functional Modules
+
+### 1. Knowledge Base Management
+
+Knowledge Base is a logical collection of documents. The system supports creating multiple knowledge bases, each containing multiple documents.
+
+#### Main Features:
+- Create new knowledge base
+- Get knowledge base list
+- View specific knowledge base details
+- Update knowledge base information
+- Delete knowledge base
+
+### 2. Document Management
+
+The system supports uploading, downloading, and managing various types of documents (mainly PDF files).
+
+#### Main Features:
+- Upload documents to specified knowledge base
+- Get list of all documents
+- View specific document details
+- Download documents
+- Delete documents
+
+#### Document Processing Flow:
+1. Upload file to temporary directory
+2. Perform text extraction (supporting various methods, including OCR)
+3. Text chunking processing
+4. Generate text embedding vectors
+5. Store in vector database
+6. Save document metadata to SQLite database
+
+### 3. Vector Embedding System
+
+This system is responsible for converting documents into vector representations to support semantic retrieval.
+
+#### Main Features:
+- Document text extraction
+- Text chunking
+- Vector embedding generation
+- Vector storage
+
+#### Technical Highlights:
+- Support for multiple text extraction methods
+- OCR processing for scanned PDFs
+- Intelligent text chunking algorithm
+- Use of high-quality text embedding models
+
+### 4. Query Processing System
+
+This system processes user queries, retrieves relevant documents, and uses large language models to generate answers.
+
+#### Main Features:
+- Receive user queries
+- Query vectorization
+- Multi-knowledge base retrieval
+- Relevant document fragment retrieval
+- Answer generation
+- Source document tracing
+
+#### Technical Highlights:
+- Multi-query generation technique (generating multiple query variants to improve recall)
+- Document relevance scoring
+- Reranking of retrieved documents
+- Generate answers with source document references
+
+### 5. Session Management System
+
+This system manages conversation history between users and the system.
+
+#### Main Features:
+- Create new conversation
+- Get conversation list
+- View specific conversation details
+- Delete conversation
+- Add messages to conversation
+
+## Technical Implementation
+
+### Database Structure
+
+The system uses SQLite database to store metadata:
+
+#### Main Tables:
+1. **knowledge_bases**: Stores knowledge base information
+   - id, name, description, created_at
+
+2. **documents**: Stores document metadata
+   - id, original_filename, stored_filename, upload_date, file_path, file_size, metadata, knowledge_base_id, extraction_failed
+
+3. **conversations**: Stores conversation information
+   - id, title, created_at, knowledge_base_id
+
+4. **conversation_messages**: Stores conversation messages
+   - id, conversation_id, message_type, content, timestamp, sources
+
+### Core Technologies Used
+
+1. **Frameworks and Libraries**:
+   - Flask: Web API framework
+   - Langchain: LLM application framework
+   - Ollama: Locally deployed LLM service
+
+2. **Models**:
+   - Text generation: deepseek-r1:1.5b (default, configurable in environment variables)
+   - Text embedding: nomic-embed-text
+
+3. **Document Processing**:
+   - Multiple text extractors: PyPDFLoader, UnstructuredPDFLoader
+   - Text chunking: RecursiveCharacterTextSplitter
+   - OCR processing: pdf2image
+
+4. **Vector Storage**:
+   - Chroma vector database
+
+## API Endpoints
+
+### Knowledge Base Management
+- `GET /knowledge-bases` - Get all knowledge bases
+- `POST /knowledge-bases` - Create new knowledge base
+- `GET /knowledge-bases/<kb_id>` - Get specific knowledge base details
+- `PUT /knowledge-bases/<kb_id>` - Update knowledge base information
+- `DELETE /knowledge-bases/<kb_id>` - Delete knowledge base
+
+### Document Management
+- `GET /documents` - Get all documents
+- `GET /documents?knowledge_base_id=<kb_id>` - Get documents for a specific knowledge base
+- `GET /documents/<doc_id>` - Get specific document details
+- `GET /documents/<doc_id>/download` - Download document
+- `DELETE /documents/<doc_id>` - Delete document
+- `POST /upload/<kb_id>` - Upload document to specified knowledge base
+
+### Query Functionality
+- `POST /query` - Process query request
+
+### Session Management
+- `GET /conversations` - Get all conversations
+- `GET /conversations?knowledge_base_id=<kb_id>` - Get conversations for a specific knowledge base
+- `POST /conversations` - Create new conversation
+- `GET /conversations/<conv_id>` - Get specific conversation details
+- `DELETE /conversations/<conv_id>` - Delete conversation
+- `POST /conversations/<conv_id>/messages` - Add message to conversation
+
+## Deployment and Configuration
+
+### Environment Setup
+1. Install Ollama and download required models:
 ```bash
 # Download language model
 ollama run deepseek-r1:1.5b
@@ -12,161 +168,99 @@ ollama run deepseek-r1:1.5b
 ollama pull nomic-embed-text
 ```
 
-Clone the project:
-
-```bash
-git clone https://github.com/heyjiacheng/Backend_Red_Panda.git
-cd Backend_Red_Panda
-```
-
-Install dependencies:
-
+2. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-Start the backend server:
-
+3. Start backend service:
 ```bash
 python3 app.py
 ```
 
-## API Documentation
+### Configuration Options
+The system provides configuration options through environment variables, which can be set in the `.env` file:
+- `TEMP_FOLDER`: Temporary folder path
+- `DOCS_STORAGE`: Document storage path
+- `DB_PATH`: Database file path
+- `LLM_MODEL`: Language model name to use
 
-### Knowledge Base Management
+## Usage Flow Example
 
-#### Create Knowledge Base
+### Basic Usage Flow
+1. Create knowledge base
+2. Upload documents to knowledge base
+3. Create new conversation
+4. Send query, get answer
 
-```bash
-curl -X POST http://localhost:8080/knowledge-bases -H "Content-Type: application/json" -d '{"name": "research_paper", "description": "my_papers"}'
+### Query Example
+When querying, you must specify the knowledge base ID to query, which can be a single or multiple knowledge bases:
+```json
+{
+  "query": "What are the main technologies in the document?",
+  "knowledge_base_id": 1
+}
 ```
 
-#### List All Knowledge Bases
-
-```bash
-curl -X GET http://localhost:8080/knowledge-bases
+You can also use direct conversation mode without specifying a knowledge base:
+```json
+{
+  "query": "What is the weather like today?"
+}
 ```
 
-#### Get Knowledge Base Details
+## Advanced Features
 
-```bash
-curl -X GET http://localhost:8080/knowledge-bases/1
+### Multi-Knowledge Base Query
+The system supports querying multiple knowledge bases simultaneously:
+```json
+{
+  "query": "What are the main technical features?",
+  "knowledge_base_ids": [1, 2, 3]
+}
 ```
 
-#### Update Knowledge Base
-
-```bash
-curl -X PUT http://localhost:8080/knowledge-bases/1 -H "Content-Type: application/json" -d '{"name": "updated_name", "description": "updated_description"}'
+### Conversation Continuation
+You can continue a previous conversation by providing a conversation ID:
+```json
+{
+  "query": "Tell me more about this technology",
+  "conversation_id": 123,
+  "knowledge_base_id": 1
+}
 ```
 
-#### Delete Knowledge Base
+## Error Handling
 
-```bash
-curl -X DELETE http://localhost:8080/knowledge-bases/1
-```
+The system provides detailed error messages when an exception occurs, including:
+- Missing required parameters
+- Knowledge base not found
+- Document not found
+- File operation errors
+- Model initialization errors
 
-### Document Processing
+## Performance Optimization
 
-#### Upload Document
+The system implements several performance optimizations:
+- Vector database for fast semantic retrieval
+- Document chunking for efficient processing
+- Text embedding caching
+- Document relevance scoring
+- Multi-query technique to improve recall
 
-```bash
-# Upload to a specific knowledge base (knowledge base #2)
-curl -X POST http://localhost:8080/upload/2 -F file=@/Users/jiadengxu/Documents/3d_gaussian_splatting_low.pdf
-```
+## Security Considerations
 
-#### List All Documents
+- File validation to prevent uploading malicious files
+- Input validation for all API endpoints
+- Resource usage limits to prevent abuse
+- Error handling to prevent information leakage
 
-```bash
-# List all documents
-curl -X GET http://localhost:8080/documents
+## Future Development
 
-# List documents from a specific knowledge base (e.g., knowledge base #2)
-curl -X GET "http://localhost:8080/documents?knowledge_base_id=2"
-```
-
-#### Get Document Details
-
-```bash
-curl -X GET http://localhost:8080/documents/1
-```
-
-#### Download Document
-
-```bash
-curl -X GET http://localhost:8080/documents/1/download --output downloaded_document.pdf
-```
-
-#### Delete Document
-
-```bash
-curl -X DELETE http://localhost:8080/documents/1
-```
-
-### Conversation History Management
-
-#### Create New Conversation
-
-```bash
-# Create a new conversation (not associated with any knowledge base)
-curl -X POST http://localhost:8080/conversations -H "Content-Type: application/json" -d '{"title": "My First Conversation"}'
-
-# Create a new conversation (associated with a specific knowledge base)
-curl -X POST http://localhost:8080/conversations -H "Content-Type: application/json" -d '{"title": "Discussion about Research Paper", "knowledge_base_id": 2}'
-```
-
-#### Get Conversation List
-
-```bash
-# Get all conversations
-curl -X GET http://localhost:8080/conversations
-
-# Get conversations for a specific knowledge base (e.g., knowledge base #2)
-curl -X GET "http://localhost:8080/conversations?knowledge_base_id=2"
-
-# Paginate conversation list
-curl -X GET "http://localhost:8080/conversations?limit=10&offset=0"
-```
-
-#### Get Conversation Details
-
-```bash
-curl -X GET http://localhost:8080/conversations/1
-```
-
-#### Delete Conversation
-
-```bash
-curl -X DELETE http://localhost:8080/conversations/1
-```
-
-#### Manually Add Message to Conversation
-
-```bash
-# Add user message
-curl -X POST http://localhost:8080/conversations/1/messages -H "Content-Type: application/json" -d '{"message_type": "user", "content": "What are the main points of this paper?"}'
-
-# Add assistant message
-curl -X POST http://localhost:8080/conversations/1/messages -H "Content-Type: application/json" -d '{"message_type": "assistant", "content": "This paper mainly discusses..."}'
-```
-
-### Query Functionality
-
-#### Ask Questions
-
-```bash
-# Query across all knowledge bases (without saving conversation history)
-curl -X POST http://localhost:8080/query -H "Content-Type: application/json" -d '{"query": "What technique used here for 3D scene reconstruction?"}'
-
-# Query in a specific knowledge base (without saving conversation history)
-curl -X POST http://localhost:8080/query -H "Content-Type: application/json" -d '{"query": "What 3D reconstruction techniques are used in this research?", "knowledge_base_id": 2}'
-
-# Query in a specific knowledge base (and save to conversation history)
-curl -X POST http://localhost:8080/query -H "Content-Type: application/json" -d '{"query": "What are the main innovations in this paper?", "knowledge_base_id": 2, "conversation_id": 1}'
-```
-
-### Health Check
-
-```bash
-# System health check
-curl http://localhost:8080/health
-```
+Planned future features:
+- Support for more document formats
+- More powerful search filtering options
+- User authentication and authorization
+- Integration with more LLM models
+- Performance optimizations for large document collections
+- Web UI improvements 

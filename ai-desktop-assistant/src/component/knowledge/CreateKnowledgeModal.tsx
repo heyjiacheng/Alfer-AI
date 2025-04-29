@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   Dialog, 
   DialogTitle,
@@ -20,6 +20,14 @@ import {
 import { useDropzone } from 'react-dropzone';
 import { Delete, Close, InsertDriveFile, Add } from '@mui/icons-material';
 import { useKnowledge } from '../../contexts/KnowledgeContext';
+
+// 辅助函数：将字节转换为可读格式
+const bytesToSize = (bytes: number): string => {
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+  if (bytes === 0) return '0 Byte';
+  const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)).toString());
+  return Math.round(bytes / Math.pow(1024, i)) + ' ' + sizes[i];
+};
 
 interface CreateKnowledgeModalProps {
   open: boolean;
@@ -105,9 +113,11 @@ export default function CreateKnowledgeModal({ open, onClose, library, mode }: C
           });
         }
       }
+      
+      // 在更新状态之前直接关闭窗口，减少状态变化导致的闪烁
       onClose();
     } catch (error) {
-      console.error("处理知识库操作时出错:", error);
+      console.error("Error processing knowledge base operation:", error);
       // 这里可以添加错误提示UI
     } finally {
       setLoading(false);
@@ -127,10 +137,10 @@ export default function CreateKnowledgeModal({ open, onClose, library, mode }: C
           if (typeof reader.result === 'string') {
             resolve(reader.result);
           } else {
-            reject(new Error('读取文件失败'));
+            reject(new Error('Failed to read file'));
           }
         };
-        reader.onerror = () => reject(new Error('读取文件失败'));
+        reader.onerror = () => reject(new Error('Failed to read file'));
         reader.readAsDataURL(file);
       });
     }
@@ -157,12 +167,16 @@ export default function CreateKnowledgeModal({ open, onClose, library, mode }: C
         p: 3,
         paddingBottom: 1,
         position: 'relative',
-        fontWeight: 'medium'
+        fontWeight: 'medium',
+        fontFamily: '"Sora", sans-serif'
       }}>
-        {mode === 'create' ? '创建知识库' : '编辑知识库'}
+        {mode === 'create' ? 'Create Knowledge Base' : 'Edit Knowledge Base'}
         <IconButton 
           sx={{ position: 'absolute', right: 8, top: 8 }} 
-          onClick={onClose}
+          onClick={() => {
+            // 在对话框关闭时立即执行关闭函数
+            onClose();
+          }}
         >
           <Close />
         </IconButton>
@@ -174,57 +188,129 @@ export default function CreateKnowledgeModal({ open, onClose, library, mode }: C
         bgcolor: theme => alpha(theme.palette.background.paper, 0.9),
         backdropFilter: 'blur(10px)',
       }}>
-        <Box sx={{ mb: 3 }}>
+        <Box sx={{ mb: 3, mt: 1.5 }}>
           <TextField
             fullWidth
-            label="知识库名称"
+            label="Knowledge Base Name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            sx={{ mb: 2 }}
+            sx={{ 
+              mb: 2,
+              position: 'relative',
+              '& .MuiInputLabel-root': {
+                fontFamily: '"Space Mono", monospace',
+                backgroundColor: theme => alpha(theme.palette.background.paper, 1),
+                borderRadius: '4px',
+                paddingLeft: '4px',
+                paddingRight: '4px',
+                '&.Mui-focused': {
+                  backgroundColor: theme => alpha(theme.palette.background.paper, 1),
+                  color: 'text.primary'
+                }
+              },
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '8px',
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'primary.main',
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'primary.main',
+                  borderWidth: '1px',
+                }
+              },
+              '& .MuiOutlinedInput-input': {
+                fontFamily: '"Space Mono", monospace',
+                padding: '14px 16px'
+              },
+              '&::before': {
+                content: '"*"',
+                position: 'absolute',
+                top: '-10px',
+                left: '-10px',
+                color: 'red',
+                fontSize: '18px',
+                fontWeight: 'bold'
+              }
+            }}
             variant="outlined"
+            required={false}
           />
           
           <TextField
             fullWidth
-            label="知识库描述"
+            label="Description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            sx={{ mb: 2 }}
+            sx={{ 
+              mb: 2,
+              '& .MuiInputLabel-root': {
+                fontFamily: '"Space Mono", monospace',
+                backgroundColor: theme => alpha(theme.palette.background.paper, 1),
+                borderRadius: '4px',
+                paddingLeft: '4px',
+                paddingRight: '4px',
+                '&.Mui-focused': {
+                  backgroundColor: theme => alpha(theme.palette.background.paper, 1),
+                  color: 'text.primary'
+                }
+              },
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '8px',
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'primary.main',
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'primary.main',
+                  borderWidth: '1px',
+                }
+              },
+              '& .MuiOutlinedInput-input': {
+                fontFamily: '"Space Mono", monospace',
+                padding: '14px 16px'
+              }
+            }}
             multiline
             rows={2}
             variant="outlined"
-            placeholder="描述这个知识库的内容和用途"
           />
         </Box>
 
         <Divider sx={{ my: 2 }} />
         
         <Typography variant="subtitle1" sx={{ mb: 1 }}>
-          添加文档
+          Add Documents
         </Typography>
 
-        <Box {...getRootProps()} sx={{ 
-          border: '2px dashed #ccc', 
-          p: 3, 
-          mb: 2, 
-          cursor: 'pointer',
-          borderRadius: 2,
-          bgcolor: theme => alpha(theme.palette.background.default, 0.4),
-          '&:hover': { borderColor: 'primary.main' }
-        }}>
+        <Box 
+          {...getRootProps()} 
+          sx={{
+            border: '2px dashed',
+            borderColor: 'divider',
+            borderRadius: 2,
+            p: 3,
+            textAlign: 'center',
+            cursor: 'pointer',
+            bgcolor: theme => alpha(theme.palette.background.default, 0.4),
+            '&:hover': {
+              borderColor: 'primary.main',
+              bgcolor: theme => alpha(theme.palette.background.default, 0.6),
+            },
+            mb: 2
+          }}
+        >
           <input {...getInputProps()} />
-          <Box textAlign="center">
-            <InsertDriveFile fontSize="large" color="action" />
-            <Typography>拖放文件至此或点击上传</Typography>
-            <Typography variant="caption" color="text.secondary">
-              支持PDF、Word、TXT和JSON格式
-            </Typography>
-          </Box>
+          <InsertDriveFile sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }} />
+          <Typography sx={{ fontFamily: '"Sora", sans-serif', mb: 1 }}>
+            Drag & drop files here, or click to select files
+          </Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ fontFamily: '"Space Mono", monospace' }}>
+            Supports PDF, Word, TXT and JSON formats
+          </Typography>
         </Box>
 
-        <Typography variant="subtitle1" gutterBottom>
-          已上传文档
-          {(existingDocuments.length > 0 || files.length > 0) && 
+        {existingDocuments.length > 0 || files.length > 0 ? (
+          <Typography variant="subtitle1" sx={{ fontFamily: '"Sora", sans-serif', fontWeight: 600, mt: 3, mb: 1 }}>
+            Documents
             <Chip 
               label={existingDocuments.length + files.length} 
               size="small" 
@@ -232,134 +318,120 @@ export default function CreateKnowledgeModal({ open, onClose, library, mode }: C
               color="primary" 
               variant="outlined"
             />
-          }
-        </Typography>
+          </Typography>
+        ) : null}
 
-        <List sx={{ 
-          maxHeight: 200, 
-          overflow: 'auto',  
-          mb: 2,
-          bgcolor: theme => alpha(theme.palette.background.paper, 0.3),
-          borderRadius: 1,
-          '&::-webkit-scrollbar': {
-            width: '6px',
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: theme => alpha(theme.palette.text.secondary, 0.1),
-            borderRadius: '6px',
-          }
-        }}>
-          {existingDocuments.length === 0 && files.length === 0 && (
-            <ListItem sx={{ py: 3 }}>
-              <ListItemText 
-                primary={
-                  <Typography 
-                    align="center" 
-                    color="text.secondary"
-                  >
-                    暂无文档
-                  </Typography>
-                } 
-              />
-            </ListItem>
-          )}
-          
-          {existingDocuments.map((doc) => (
-            <ListItem key={doc.id} secondaryAction={
+        {existingDocuments.length > 0 && (
+          <>
+            <List sx={{ 
+              bgcolor: theme => alpha(theme.palette.background.default, 0.4),
+              borderRadius: 2,
+              overflow: 'hidden'
+            }}>
+              {existingDocuments.map((doc) => (
+                <ListItem
+                  key={doc.id}
+                  secondaryAction={
+                    <IconButton 
+                      edge="end"
+                      onClick={() => {
+                        if (library) {
+                          removeDocumentFromLib(library.id, doc.id);
+                        }
+                      }}
+                    >
+                      <Delete fontSize="small" />
+                    </IconButton>
+                  }
+                >
+                  <ListItemText 
+                    primary={doc.name} 
+                    primaryTypographyProps={{ 
+                      fontFamily: '"Space Mono", monospace',
+                      fontSize: '0.9rem'
+                    }}
+                    secondary={`${bytesToSize(doc.size)}`} 
+                    secondaryTypographyProps={{ 
+                      fontFamily: '"Space Mono", monospace',
+                      fontSize: '0.75rem'
+                    }}
+                  />
+                </ListItem>
+              ))}
+            </List>
+          </>
+        )}
+
+        {files.map((file, index) => (
+          <ListItem 
+            key={index}
+            secondaryAction={
               <IconButton 
                 edge="end" 
-                onClick={() => removeDocumentFromLib(doc.libraryId, doc.id)}
-                size="small"
-                sx={{
-                  color: 'error.main',
-                  '&:hover': {
-                    bgcolor: theme => alpha(theme.palette.error.main, 0.1)
-                  }
-                }}
+                onClick={() => setFiles(prev => prev.filter((_, i) => i !== index))}
               >
                 <Delete fontSize="small" />
               </IconButton>
-            }>
-              <ListItemText 
-                primary={
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <InsertDriveFile fontSize="small" sx={{ mr: 1, opacity: 0.6 }} />
-                    <Typography 
-                      noWrap 
-                      sx={{ 
-                        maxWidth: '280px', 
-                        overflow: 'hidden', 
-                        textOverflow: 'ellipsis' 
-                      }}
-                    >
-                      {doc.name}
-                    </Typography>
-                  </Box>
-                } 
-                secondary={`${(doc.size / 1024).toFixed(1)}KB`} 
-              />
-            </ListItem>
-          ))}
-          {files.map((file, index) => (
-            <ListItem key={`${file.name}-${file.size}-${index}`} secondaryAction={
-              <IconButton 
-                edge="end" 
-                onClick={() => setFiles(files.filter((_, i) => i !== index))}
-                size="small"
-                sx={{
-                  color: 'error.main',
-                  '&:hover': {
-                    bgcolor: theme => alpha(theme.palette.error.main, 0.1)
-                  }
-                }}
-              >
-                <Delete fontSize="small" />
-              </IconButton>
-            }>
-              <ListItemText 
-                primary={
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <InsertDriveFile fontSize="small" sx={{ mr: 1, opacity: 0.6 }} />
-                    <Typography 
-                      noWrap 
-                      sx={{ 
-                        maxWidth: '280px', 
-                        overflow: 'hidden', 
-                        textOverflow: 'ellipsis' 
-                      }}
-                    >
-                      {file.name}
-                    </Typography>
-                  </Box>
-                } 
-                secondary={`${(file.size / 1024).toFixed(1)}KB`} 
-              />
-            </ListItem>
-          ))}
-        </List>
+            }
+          >
+            <ListItemText 
+              primary={file.name} 
+              primaryTypographyProps={{ 
+                fontFamily: '"Space Mono", monospace',
+                fontSize: '0.9rem'
+              }}
+              secondary={bytesToSize(file.size)} 
+              secondaryTypographyProps={{ 
+                fontFamily: '"Space Mono", monospace',
+                fontSize: '0.75rem'
+              }}
+            />
+          </ListItem>
+        ))}
       </DialogContent>
 
-      <DialogActions sx={{ p: 3, pt: 1, gap: 2 }}>
-        {mode === 'edit' && (
+      <DialogActions sx={{ p: 3, pt: 2 }}>
+        {mode === "edit" && (
           <Button 
-            variant="outlined" 
+            onClick={async () => {
+              if (library) {
+                await deleteLibrary(library.id);
+                onClose();
+              }
+            }} 
             color="error"
-            onClick={() => {
-              deleteLibrary(library.id);
-              onClose();
-            }}
+            variant="outlined"
             startIcon={<Delete />}
+            sx={{ 
+              mr: 'auto',
+              fontFamily: '"Space Mono", monospace',
+              textTransform: 'none'
+            }}
           >
-            删除知识库
+            Delete
           </Button>
         )}
-        <Box sx={{ flexGrow: 1 }} />
         <Button 
-          variant="contained" 
-          onClick={handleSubmit}
-          disabled={loading || !name.trim()}
+          onClick={onClose} 
+          sx={{ 
+            fontFamily: '"Space Mono", monospace',
+            textTransform: 'none'
+          }}
         >
-          {loading ? <CircularProgress size={24} /> : mode === 'create' ? '创建知识库' : '保存更改'}
+          Cancel
+        </Button>
+        <Button 
+          onClick={handleSubmit} 
+          variant="contained" 
+          disabled={!name.trim() || loading}
+          sx={{ 
+            fontFamily: '"Space Mono", monospace',
+            textTransform: 'none'
+          }}
+        >
+          {loading ? (
+            <CircularProgress size={24} />
+          ) : mode === 'create' ? 'Create' : 'Save'}
         </Button>
       </DialogActions>
     </Dialog>

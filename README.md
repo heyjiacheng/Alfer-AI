@@ -1,5 +1,5 @@
 # RAG from Álfer-AI
-We've built a ready-to-use local RAG software, feel free to leave any comment on this project.
+We've built a ready-to-use local RAG software (ollama based pdf retrival app), feel free to leave any comment on this project. 🫶
 ## 🔧 Installation
 ```bash
 git clone https://github.com/heyjiacheng/Alfer-AI.git
@@ -11,6 +11,11 @@ conda create --name rag python=3.12
 conda activate rag
 pip install -r requirements.txt
 ```
+install latest ollama
+```bash
+# for linux user
+curl -fsSL https://ollama.com/install.sh | sh
+```
 ### frontend installation (from root directory)
 
 install Rust
@@ -19,16 +24,11 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 install Node.js 18+
 ```bash
-# Windows 用户从 https://nodejs.org 下载安装包
+# Windows users download install package from https://nodejs.org
 ```
 install Tauri CLI
 ```bash
 npm install --global @tauri-apps/cli
-```
-install rest of packages
-```bash
-cd ai-desktop-assistant
-pnpm install
 ```
 
 ## 🌟 Quick start
@@ -41,5 +41,6 @@ python app.py
 ### start frontend (in separate terminal)
 ```bash
 cd ai-desktop-assistant
+pnpm install
 pnpm tauri dev
 ```

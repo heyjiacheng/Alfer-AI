@@ -14,18 +14,18 @@ export default function ModelSelector() {
   const handleModelChange = (value: string) => {
     console.log('Setting model to:', value);
     setSelectedModel(value);
-    // 直接设置 localStorage 作为双重保证
+    // Set localStorage as a double guarantee
     localStorage.setItem('selectedAIModel', value);
   };
 
   return (
     <FormControl variant="outlined" size="small" sx={{ minWidth: 120, m: 1 }}>
-      <InputLabel id="model-select-label">AI 模型</InputLabel>
+      <InputLabel id="model-select-label">AI model</InputLabel>
       <Select
         labelId="model-select-label"
         value={selectedModel}
         onChange={(e) => handleModelChange(e.target.value)}
-        label="AI 模型"
+        label="AI model"
       >
         <MenuItem value="deepseek-r1">DeepSeek R1</MenuItem>
         <MenuItem value="gpt-4">GPT-4</MenuItem>

@@ -7,7 +7,7 @@ import 'reactflow/dist/style.css';
 import { useTheme } from '../../contexts/ThemeContext';
 import { Fullscreen, FullscreenExit } from '@mui/icons-material';
 
-// 明确定义符合React Flow要求的节点类型
+// Clearly define node types required by React Flow
 interface MindMapNode extends Node {
   id: string;
   position: { x: number; y: number };
@@ -19,18 +19,18 @@ const initialNodes: MindMapNode[] = [
   {
     id: '1',
     position: { x: 0, y: 0 },
-    data: { label: '节点1' },
+    data: { label: 'Node 1' },
     type: 'default'
   },
   {
     id: '2',
     position: { x: 200, y: 100 },
-    data: { label: '节点2' },
+    data: { label: 'Node 2' },
     type: 'default'
   },
 ];
 
-// 将 FlowComponent 移到外部组件
+// Move FlowComponent to an external component
 interface FlowComponentProps {
   nodes: MindMapNode[];
   edges: Edge[];
@@ -43,7 +43,7 @@ interface FlowComponentProps {
   setNodeIdCounter: React.Dispatch<React.SetStateAction<number>>;
 }
 
-// 添加自定义模态组件
+// Add custom modal component
 const EditModal = ({ 
   open,
   defaultValue,
@@ -67,16 +67,16 @@ const EditModal = ({
         inputRef.current.select();
       }
     }
-  }, [open, defaultValue]); // 添加defaultValue依赖
+  }, [open, defaultValue]); // Add defaultValue dependency
 
   const handleConfirm = () => {
     onConfirm(inputValue);
-    // 不需要在这里重置，因为useEffect会在下次打开时处理
+    // No need to reset here, since useEffect will handle it on next open
   };
 
   const handleCancel = () => {
     onClose();
-    // 不需要在这里重置，因为useEffect会在下次打开时处理
+    // No need to reset here, since useEffect will handle it on next open
   };
 
   return (
@@ -104,8 +104,8 @@ const EditModal = ({
           }}
         />
         <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-          <button onClick={handleConfirm}>确认</button>
-          <button onClick={handleCancel}>取消</button>
+          <button onClick={handleConfirm}>Confirm</button>
+          <button onClick={handleCancel}>Cancel</button>
         </div>
       </Box>
     </Modal>
@@ -126,7 +126,7 @@ const FlowComponent = ({
   const { deleteElements } = useReactFlow();
   const [editingNode, setEditingNode] = useState<MindMapNode | null>(null);
 
-  // 完整类型注解的回调函数
+  // Full type annotation callback function
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => setNodes(
       applyNodeChanges(changes, nodes) as MindMapNode[]
@@ -153,7 +153,7 @@ const FlowComponent = ({
         x: nodes[nodes.length - 1]?.position.x + 50 || 0,
         y: nodes[nodes.length - 1]?.position.y + 50 || 0
       },
-      data: { label: `节点${nodeIdCounter}` },
+      data: { label: `Node ${nodeIdCounter}` },
       type: 'default'
     };
     
@@ -297,14 +297,14 @@ export default function RightCanvas() {
   const [edges, setEdges] = useState<Edge[]>([]);
   const { isDarkMode } = useTheme();
   
-  // 添加节点ID计数器
+  // Add node ID counter
   const [nodeIdCounter, setNodeIdCounter] = useState(
     Math.max(...initialNodes.map(n => parseInt(n.id))) + 1
   );
 
   return (
     <>
-      {/* 默认小窗口 - 非全屏时显示 */}
+      {/* Default small window - Display when not fullscreen */}
       {!isFullscreen && (
         <Box sx={{
           position: 'relative',
@@ -315,7 +315,7 @@ export default function RightCanvas() {
           overflow: 'hidden',
           bgcolor: 'background.paper',
           '& .react-flow__controls-button:not(:last-child)': {
-            display: 'none' // 隐藏除全屏按钮外的所有控制项
+            display: 'none' // Hide all controls except fullscreen button
           }
         }}>
           <ReactFlowProvider>
@@ -323,7 +323,7 @@ export default function RightCanvas() {
               nodes={nodes}
               edges={edges}
               isDarkMode={isDarkMode}
-              isFullscreen={false} // 强制小窗口模式
+              isFullscreen={false} // Force small window mode
               setIsFullscreen={setIsFullscreen}
               setNodes={setNodes}
               setEdges={setEdges}
@@ -334,7 +334,7 @@ export default function RightCanvas() {
         </Box>
       )}
 
-      {/* 全屏模态框 */}
+      {/* Fullscreen modal */}
       <Modal
         open={isFullscreen}
         onClose={() => setIsFullscreen(false)}
@@ -342,7 +342,7 @@ export default function RightCanvas() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          marginLeft: '320px', // 保持侧边栏空间
+          marginLeft: '320px', // Keep sidebar space
           width: 'calc(100% - 320px)'
         }}
       >
@@ -353,14 +353,14 @@ export default function RightCanvas() {
           borderRadius: 2,
           overflow: 'hidden',
           boxShadow: 24,
-          position: 'relative' // 修复定位问题
+          position: 'relative' // Fix positioning issue
         }}>
           <ReactFlowProvider>
             <FlowComponent
               nodes={nodes}
               edges={edges}
               isDarkMode={isDarkMode}
-              isFullscreen={true} // 强制全屏模式
+              isFullscreen={true} // Force fullscreen mode
               setIsFullscreen={setIsFullscreen}
               setNodes={setNodes}
               setEdges={setEdges}

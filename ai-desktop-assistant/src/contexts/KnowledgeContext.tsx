@@ -18,6 +18,7 @@ interface KnowledgeContextType {
   readonly libraries: KnowledgeLibrary[];
   readonly folders: KnowledgeFolder[];
   readonly activeLib?: string;
+  readonly selectedLibraryId: string | null;
   readonly createLibrary: (name: string, description: string) => Promise<string>;
   readonly deleteLibrary: (id: string) => void;
   readonly addDocumentToLib: (
@@ -30,6 +31,7 @@ interface KnowledgeContextType {
   ) => void;
   readonly removeDocumentFromLib: (libId: string, docId: string) => void;
   readonly setActiveLib: (id: string) => void;
+  readonly selectLibrary: (id: string | null) => void;
   readonly documents: FileDocument[];
   readonly updateFolder: (id: string, name: string) => void;
   readonly deleteFolder: (id: string) => void;
@@ -52,13 +54,14 @@ export function KnowledgeProvider({
   const [libraries, setLibraries] = useState<KnowledgeLibrary[]>([]);
   const [folders, setFolders] = useState<KnowledgeFolder[]>([]);
   const [activeLib, setActiveLib] = useState<string>('');
+  const [selectedLibraryId, setSelectedLibraryId] = useState<string | null>(null);
   const [documents, setDocuments] = useState<FileDocument[]>([]);
 
-  // 初始化加载知识库和文件夹
+  // Initialize knowledge base and folder loading
   useEffect(() => {
     const fetchKnowledgeBases = async () => {
       try {
-        // 加载文件夹
+        // Load folders
         try {
           const storedFolders = localStorage.getItem('knowledge_folders');
           if (storedFolders) {
@@ -70,7 +73,7 @@ export function KnowledgeProvider({
         }
 
         const backendLibraries = await knowledgeBaseApi.getAll();
-        // 转换后端数据以匹配前端结构
+        // Convert backend data to match frontend structure
         const transformedLibraries = backendLibraries.map((lib: any) => ({
           id: lib.id.toString(),
           name: lib.name,
@@ -79,7 +82,7 @@ export function KnowledgeProvider({
         }));
         setLibraries(transformedLibraries);
 
-        // 加载所有文档
+        // Load all documents
         const allDocuments = await documentApi.getAll();
         const transformedDocs = allDocuments.map((doc: any) => ({
           id: doc.id.toString(),
@@ -87,7 +90,7 @@ export function KnowledgeProvider({
           type: getFileType(doc.original_filename),
           size: doc.file_size,
           libraryId: doc.knowledge_base_id.toString(),
-          content: "", // 内容将在需要时加载
+          content: "", // Content will be loaded when needed
         }));
         setDocuments(transformedDocs);
       } catch (error) {
@@ -98,14 +101,14 @@ export function KnowledgeProvider({
     fetchKnowledgeBases();
   }, []);
 
-  // 保存文件夹到本地存储
+  // Save folders to local storage
   useEffect(() => {
     if (folders.length > 0) {
       localStorage.setItem('knowledge_folders', JSON.stringify(folders));
     }
   }, [folders]);
 
-  // 辅助函数：从文件名获取类型
+  // Helper function: Get type from filename
   const getFileType = (filename: string) => {
     const extension = filename.split(".").pop()?.toLowerCase();
     if (!extension) return "application/octet-stream";
@@ -123,7 +126,7 @@ export function KnowledgeProvider({
     return typeMap[extension] || 'application/octet-stream';
   };
 
-  // 更新文件夹
+  // Update folder
   const updateFolder = (id: string, name: string) => {
     setFolders(prev => 
       prev.map(folder => 
@@ -132,18 +135,18 @@ export function KnowledgeProvider({
     );
   };
 
-  // 删除文件夹
+  // Delete folder
   const deleteFolder = (id: string) => {
-    // 从文件夹中移除
+    // Remove from folder
     setFolders(prev => prev.filter(folder => folder.id !== id));
   };
 
-  // 创建知识库
+  // Create knowledge base
   const createLibrary = async (name: string, description: string): Promise<string> => {
     try {
       const response = await knowledgeBaseApi.create({
         name,
-        description: description || '知识库'
+        description: description || ''
       });
 
       const libraryId = response.knowledge_base_id.toString();
@@ -163,22 +166,22 @@ export function KnowledgeProvider({
     }
   };
 
-  // 删除知识库
+  // Delete knowledge base
   const deleteLibrary = async (id: string) => {
     try {
       await knowledgeBaseApi.delete(id);
       
-      // 从库列表中移除
+      // Remove from library list
       setLibraries(prev => prev.filter(lib => lib.id !== id));
       
-      // 同时删除此知识库下的所有文档记录
+      // Remove from library list
       setDocuments((prev) => prev.filter((doc) => doc.libraryId !== id));
     } catch (error) {
       console.error(`Failed to delete knowledge base ${id}:`, error);
     }
   };
 
-  // 更新知识库
+  // Update knowledge base
   const updateLibrary = async (
     id: string,
     newData: Partial<KnowledgeLibrary>
@@ -200,16 +203,16 @@ export function KnowledgeProvider({
     }
   };
 
-  // 上传文档到知识库
+  // Upload document to knowledge base
   const addDocumentToLib = async (libId: string, docData: Omit<FileDocument, 'id'>) => {
     try {
       let fileData: ArrayBuffer;
 
-      // 处理文件内容
+      // Process file content
       if (typeof docData.content === 'string') {
-        // 如果内容是 base64 编码的字符串
+        // If content is base64 encoded string
         if (docData.content.startsWith('data:')) {
-          // 处理 data URL 格式
+          // Process data URL format
           const base64Data = docData.content.split(',')[1];
           const binaryString = atob(base64Data);
           const bytes = new Uint8Array(binaryString.length);
@@ -218,22 +221,22 @@ export function KnowledgeProvider({
           }
           fileData = bytes.buffer;
         } else {
-          // 普通字符串内容，使用 TextEncoder 编码
+          // Normal string content, use TextEncoder to encode
           const encoder = new TextEncoder();
           fileData = encoder.encode(docData.content).buffer;
         }
       } else {
-        console.error('不支持的内容类型:', typeof docData.content);
-        throw new Error('不支持的内容类型');
+        console.error('Unsupported content type:', typeof docData.content);
+        throw new Error('Unsupported content type');
       }
 
-      // 直接使用 fetch 上传
+      // Directly use fetch to upload
       const response = await documentApi.upload(libId, {
         name: docData.name,
         file: fileData
       });
 
-      // 添加到前端状态
+      // Add to frontend state
       const newDoc = {
         id: response.document_id.toString(),
         name: docData.name,
@@ -245,7 +248,7 @@ export function KnowledgeProvider({
       
       setDocuments(prev => [...prev, newDoc]);
       
-      // 更新知识库状态
+      // Update knowledge base state
       setLibraries(prev => 
         prev.map(lib => 
           lib.id === libId 
@@ -261,7 +264,7 @@ export function KnowledgeProvider({
     }
   };
 
-  // 从知识库移除文档
+  // Remove document from knowledge base
   const removeDocumentFromLib = async (libId: string, docId: string) => {
     try {
       await documentApi.delete(docId);
@@ -287,6 +290,7 @@ export function KnowledgeProvider({
     libraries,
     folders,
     activeLib,
+    selectedLibraryId,
     documents,
     createLibrary,
     deleteLibrary,
@@ -294,9 +298,13 @@ export function KnowledgeProvider({
     updateLibrary,
     removeDocumentFromLib,
     setActiveLib,
+    selectLibrary: (id: string | null) => {
+      console.log(`KnowledgeContext: 设置选择的知识库从 ${selectedLibraryId} 到 ${id}`);
+      setSelectedLibraryId(id);
+    },
     updateFolder,
     deleteFolder
-  }), [libraries, folders, activeLib, documents]);
+  }), [libraries, folders, activeLib, selectedLibraryId, documents]);
 
   return (
     <KnowledgeContext.Provider value={value}>

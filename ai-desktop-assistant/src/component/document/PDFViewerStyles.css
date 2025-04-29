@@ -1,9 +1,59 @@
-/* 简化的自定义样式用于PDF查看器 */
+/* Simplified custom styles for PDF viewer */
+.pdf-viewer-container .react-pdf__Document {
+  margin: 0 auto;
+}
+
+/* Custom toolbar styles */
+.pdf-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  background-color: #f5f5f5;
+  border-bottom: 1px solid #ddd;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Page navigation styles */
+.page-navigation {
+  display: flex;
+  align-items: center;
+  margin: 0 10px;
+  font-size: 14px;
+}
+
+/* Zoom settings - ensure 100% zoom */
+.pdf-page {
+  width: 100% !important;
+  height: auto !important;
+}
+
+/* Custom zoom buttons */
+.zoom-controls button {
+  margin: 0 5px;
+  cursor: pointer;
+}
+
+/* PDF container styles */
+.pdf-container {
+  overflow-y: auto;
+  height: calc(100vh - 90px);
+  background-color: #f0f0f0;
+  padding: 20px;
+}
+
+/* Text selection styles */
+.pdf-page ::selection {
+  background: #2196f3;
+  color: white;
+}
+
+/* Simplified custom styles for PDF viewer */
 .rpv-core__viewer {
   border-radius: 4px;
 }
 
-/* 自定义工具栏样式 */
+/* Custom toolbar styles */
 .rpv-toolbar {
   padding: 4px !important;
   background-color: #fafafa;
@@ -14,29 +64,29 @@
   margin: 0 2px !important;
 }
 
-/* 页面导航样式 */
+/* Page navigation styles */
 .rpv-page-navigation__current {
   border-radius: 4px !important;
   border: 1px solid #e0e0e0 !important;
 }
 
-/* 缩放设置 - 确保100%缩放 */
+/* Zoom settings - ensure 100% zoom */
 .rpv-zoom__popover-target-scale {
   min-width: 80px !important;
 }
 
-/* 自定义缩放按钮 */
+/* Custom zoom buttons */
 .rpv-zoom__popover-target-scale-actual {
   background-color: rgba(0, 0, 0, 0.05) !important;
 }
 
-/* PDF容器样式 */
+/* PDF container styles */
 .source-text-sidebar {
   transition: all 0.3s ease-in-out;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.05) !important;
 }
 
-/* 文本选择样式 */
+/* Text selection styles */
 ::selection {
   background-color: rgba(25, 118, 210, 0.2) !important;
 } 

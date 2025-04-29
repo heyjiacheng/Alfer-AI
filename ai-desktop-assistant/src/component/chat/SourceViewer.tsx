@@ -1,9 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import { Box, Typography, Paper, List, ListItem, Divider, Card, CardContent, Chip, Button, Alert } from '@mui/material';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import { Box, Typography, Paper, List, ListItem, Divider, Card, CardContent, Chip, Button, Alert, IconButton } from '@mui/material';
 import { ChatMessage } from '../../contexts/ChatContext';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import PDFViewer from '../document/PDFViewer';
 import { documentApi } from '../../services/api';
+import { useTheme } from '@mui/material/styles';
+import { useKnowledge } from '../../contexts/KnowledgeContext';
+import ExpandLess from '@mui/icons-material/ExpandLess';
+import ExpandMore from '@mui/icons-material/ExpandMore';
+import { alpha } from '@mui/material/styles';
 
 interface Source {
   document_name: string;
@@ -14,6 +19,7 @@ interface Source {
   relevance_score?: number;
   metadata?: any;
   document_id?: string;
+  knowledge_base_id?: number | string;
 }
 
 interface SourceViewerProps {
@@ -28,76 +34,74 @@ export default function SourceViewer({ sources }: SourceViewerProps) {
     chunkText?: string;
   } | null>(null);
 
+  const [expanded, setExpanded] = useState(false);
+
   useEffect(() => {
-    console.log("SourceViewer接收到源信息:", sources);
+    console.log("SourceViewer received source information:", sources);
   }, [sources]);
 
-  const handleOpenPdf = async (source: Source) => {
-    // Get document ID from source if available
-    const documentName = source?.document_name || '未知文档';
+  const handleDocumentClick = useCallback(async (source: any) => {
+    if (!source) return;
     
-    // Better page extraction with fallbacks and validation
-    let pageNumber = 1; // Default to page 1
-    let pageLabel = null; // For display purposes
+    const documentId = source?.document_id;
+    const documentName = source?.document_name || 'Unknown document';
+    let pageNumber = 1; // Default page number is 1
+    let pageLabel = null;
     
-    // First, try to get the label information (shows what's on the PDF)
-    if (source?.page_label) {
+    // Extract page information from source
+    if (source.page_label) {
       pageLabel = source.page_label;
-      console.log(`获取PDF标签页码: ${pageLabel}`);
+      console.log(`Getting PDF label page number: ${pageLabel}`);
       
-      // If page label is numeric, use it for navigation
+      // Try to convert page label to number if possible
       if (typeof pageLabel === 'string' && /^\d+$/.test(pageLabel)) {
-        try {
-          pageNumber = parseInt(pageLabel, 10);
-          console.log(`使用页面标签作为跳转页码: ${pageNumber}`);
-        } catch (e) {
-          console.warn(`无法解析页面标签 "${pageLabel}" 为数字`);
-        }
+        pageNumber = parseInt(pageLabel, 10);
+        console.log(`Using page label as jump page number: ${pageNumber}`);
+      } else {
+        console.warn(`Cannot parse page label "${pageLabel}" as a number`);
       }
-    } else if (source?.metadata?.page_label) {
+    }
+    // If no direct page label, try to get from metadata
+    else if (source.metadata && source.metadata.page_label) {
       pageLabel = source.metadata.page_label;
-      console.log(`从metadata获取页面标签: ${pageLabel}`);
+      console.log(`Getting page label from metadata: ${pageLabel}`);
       
-      // If page label is numeric, use it for navigation
+      // Try to convert page label to number if possible
       if (typeof pageLabel === 'string' && /^\d+$/.test(pageLabel)) {
-        try {
-          pageNumber = parseInt(pageLabel, 10);
-          console.log(`使用metadata页面标签作为跳转页码: ${pageNumber}`);
-        } catch (e) {
-          console.warn(`无法解析metadata页面标签 "${pageLabel}" 为数字`);
-        }
+        pageNumber = parseInt(pageLabel, 10);
+        console.log(`Using metadata page label as jump page number: ${pageNumber}`);
+      } else {
+        console.warn(`Cannot parse metadata page label "${pageLabel}" as a number`);
       }
     }
     
-    // If no valid page label is found, fall back to page number
-    if (!pageNumber || pageNumber < 1) {
-      // Try different ways to get the page number
-      if (typeof source?.page === 'number') {
+    // If no valid page number from label, try to get from page property directly
+    if (pageNumber === 1) {
+      if (source.page && typeof source.page === 'number') {
         pageNumber = source.page;
-        console.log(`直接从source.page获取页码: ${pageNumber}`);
-      } else if (source?.metadata?.page && typeof source.metadata.page === 'number') {
+        console.log(`Getting page number directly from source.page: ${pageNumber}`);
+      }
+      else if (source.metadata && source.metadata.page && typeof source.metadata.page === 'number') {
         pageNumber = source.metadata.page;
-        console.log(`从source.metadata.page获取页码: ${pageNumber}`);
-      } else if (source?.metadata?.page && typeof source.metadata.page === 'string') {
-        // Try parsing string to number
-        const parsed = parseInt(source.metadata.page, 10);
-        if (!isNaN(parsed)) {
-          pageNumber = parsed;
-          console.log(`从string类型的metadata.page解析页码: ${pageNumber}`);
+        console.log(`Getting page number from source.metadata.page: ${pageNumber}`);
+      }
+      // Handle string page numbers
+      else if (source.metadata && source.metadata.page && typeof source.metadata.page === 'string') {
+        try {
+          pageNumber = parseInt(source.metadata.page.trim(), 10);
+          console.log(`Parsing page number from string type metadata.page: ${pageNumber}`);
+          if (isNaN(pageNumber)) pageNumber = 1;
+        } catch (e) {
+          pageNumber = 1;
         }
       }
     }
     
-    // Ensure page number is at least 1
-    pageNumber = Math.max(1, pageNumber);
+    console.log(`Preparing to open document: ${documentName}, page number: ${pageNumber}${pageLabel ? ` (label: ${pageLabel})` : ''}`);
     
-    console.log(`准备打开文档: ${documentName}，页码: ${pageNumber}${pageLabel ? ` (标签: ${pageLabel})` : ''}`);
-    
-    // Construct document URL
-    const documentId = extractDocumentId(source);
     if (!documentId) {
-      console.error("无法获取文档ID:", source);
-      alert(`无法访问文档: ${documentName}。此文档可能已被删除或不再可用。`);
+      // If document ID is not available, do not attempt to open
+      console.error("Cannot get document ID:", source);
       return;
     }
 
@@ -143,7 +147,7 @@ export default function SourceViewer({ sources }: SourceViewerProps) {
       page: pageNumber,
       chunkText: chunkText
     });
-  };
+  }, []);
 
   // 从源数据中提取可高亮的文本内容
   const getHighlightableText = (source: Source): string => {
@@ -222,7 +226,7 @@ export default function SourceViewer({ sources }: SourceViewerProps) {
     return (
       <Box sx={{ p: 3, textAlign: 'center' }}>
         <Typography variant="body1" color="text.secondary">
-          没有可用的参考来源
+          No available reference sources
         </Typography>
       </Box>
     );
@@ -231,7 +235,7 @@ export default function SourceViewer({ sources }: SourceViewerProps) {
   return (
     <Box sx={{ p: 1, height: '100%', overflow: 'auto' }}>
       <Typography variant="h6" gutterBottom>
-        参考来源 ({sources.length})
+        Reference sources ({sources.length})
       </Typography>
       <List>
         {sources.map((source: Source, index) => (
@@ -241,7 +245,7 @@ export default function SourceViewer({ sources }: SourceViewerProps) {
               <Card variant="outlined" sx={{ width: '100%', mb: 1 }}>
                 <CardContent sx={{ '&:last-child': { pb: 2 } }}>
                   <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-                    {source?.document_name || '未知文档'}
+                    {source?.document_name || 'Unknown document'}
                   </Typography>
                   
                   <Box sx={{ display: 'flex', gap: 1, mb: 1, flexWrap: 'wrap' }}>
@@ -249,12 +253,12 @@ export default function SourceViewer({ sources }: SourceViewerProps) {
                       (source?.metadata && (source.metadata.page !== undefined || source.metadata.page_label !== undefined))) && (
                       <Chip 
                         size="small" 
-                        label={`页码: ${
+                        label={`Page number: ${
                           source?.page_label || source?.metadata?.page_label || 
                           source?.page || source?.metadata?.page || 'N/A'
                         }${
                           source?.page_label && source?.page && source.page_label !== source.page.toString() ? 
-                          ` (内部: ${source.page})` : ''
+                          ` (internal: ${source.page})` : ''
                         }`} 
                         variant="outlined" 
                       />
@@ -262,7 +266,7 @@ export default function SourceViewer({ sources }: SourceViewerProps) {
                     {source?.relevance_score !== undefined && (
                       <Chip 
                         size="small" 
-                        label={`相关度: ${(typeof source.relevance_score === 'number') 
+                        label={`Relevance: ${(typeof source.relevance_score === 'number') 
                           ? source.relevance_score.toFixed(2) 
                           : source.relevance_score}`} 
                         variant="outlined" 
@@ -272,7 +276,14 @@ export default function SourceViewer({ sources }: SourceViewerProps) {
                     {source?.metadata?.total_pages && (
                       <Chip 
                         size="small" 
-                        label={`总页数: ${source.metadata.total_pages}`} 
+                        label={`Total pages: ${source.metadata.total_pages}`} 
+                        variant="outlined" 
+                      />
+                    )}
+                    {source?.knowledge_base_id && (
+                      <Chip 
+                        size="small" 
+                        label={`Knowledge Base: ${source.knowledge_base_id}`}
                         variant="outlined" 
                       />
                     )}
@@ -293,9 +304,9 @@ export default function SourceViewer({ sources }: SourceViewerProps) {
                       startIcon={<PictureAsPdfIcon />}
                       size="small" 
                       variant="outlined"
-                      onClick={() => handleOpenPdf(source)}
+                      onClick={() => handleDocumentClick(source)}
                     >
-                      查看文档
+                      View document
                     </Button>
                   </Box>
                 </CardContent>

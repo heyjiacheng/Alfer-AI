@@ -11,18 +11,19 @@ from langchain.retrievers.multi_query import MultiQueryRetriever
 from get_vector_db import get_vector_db
 from db_utils import get_db_connection
 
-# 使用环境变量配置
-LLM_MODEL = os.getenv('LLM_MODEL', 'deepseek-r1:1.5B')
+# Use environment variables for configuration
+LLM_MODEL = os.getenv('LLM_MODEL', 'gemma3:latest')
 DB_PATH = os.getenv('DB_PATH', './documents.db')
+relevance_score = 60
 
 def get_prompt() -> tuple:
     """
-    创建查询和回答的提示模板
+    Create query and answer prompt templates
     
-    返回:
-        tuple: 包含查询提示模板和回答提示模板的元组
+    Returns:
+        tuple: A tuple containing query prompt template and answer prompt template
     """
-    # 多重查询提示模板 - 使用英文提示以提高性能
+    # Multiple query prompt template - using English prompts for better performance
     query_prompt = PromptTemplate(
         input_variables=["question"],
         template="""You are an AI assistant. Your task is to generate five different versions 
@@ -33,7 +34,7 @@ def get_prompt() -> tuple:
         Original question: {question}""",
     )
 
-    # 回答提示模板 - 使用英文提示并确保不输出内部思考过程
+    # Answer prompt template - using English prompts and ensuring no internal thought process is output
     answer_prompt = ChatPromptTemplate.from_template("""You are an AI assistant from a sweden company named Alfer-AI. Your task is to answer the question based on the context below.
                                                       Provide a direct, concise answer.
     
@@ -49,13 +50,13 @@ def get_prompt() -> tuple:
 
 def get_document_metadata(doc_source: str) -> Optional[str]:
     """
-    从数据库中获取文档的原始文件名
+    Get the original filename of a document from the database
     
-    参数:
-        doc_source: 文档源路径
+    Parameters:
+        doc_source: Document source path
         
-    返回:
-        str: 原始文件名或None
+    Returns:
+        str: Original filename or None
     """
     if not doc_source:
         return None
@@ -74,23 +75,23 @@ def get_document_metadata(doc_source: str) -> Optional[str]:
             return result[0]
         return source_file
     except Exception as e:
-        print(f"获取文档元数据时出错: {str(e)}")
+        print(f"Error getting document metadata: {str(e)}")
         return source_file
     finally:
         conn.close()
 
 def calculate_relevance_score(query_embedding, doc_embedding):
     """
-    计算查询和文档嵌入之间的相似度分数
+    Calculate similarity score between query and document embeddings
     
-    参数:
-        query_embedding: 查询的嵌入向量
-        doc_embedding: 文档的嵌入向量
+    Parameters:
+        query_embedding: Query embedding vector
+        doc_embedding: Document embedding vector
         
-    返回:
-        float: 相似度分数 (0-100)
+    Returns:
+        float: Similarity score (0-100)
     """
-    # 使用余弦相似度计算相关性
+    # Use cosine similarity to calculate relevance
     dot_product = np.dot(query_embedding, doc_embedding)
     query_norm = np.linalg.norm(query_embedding)
     doc_norm = np.linalg.norm(doc_embedding)
@@ -99,36 +100,36 @@ def calculate_relevance_score(query_embedding, doc_embedding):
         return 0
     
     cosine_similarity = dot_product / (query_norm * doc_norm)
-    # 将相似度转换为百分比分数
+    # Convert similarity to percentage score
     return float(max(0, min(100, (cosine_similarity + 1) * 50)))
 
 def format_sources(retrieved_docs: List[Document], query_embedding=None, doc_embeddings=None) -> List[Dict[str, Any]]:
     """
-    格式化检索到的文档源信息，并包含相关度分数
+    Format retrieved document source information, including relevance scores
     
-    参数:
-        retrieved_docs: 检索到的文档列表
-        query_embedding: 查询的嵌入向量 (可选)
-        doc_embeddings: 文档的嵌入向量 (可选)
+    Parameters:
+        retrieved_docs: List of retrieved documents
+        query_embedding: Query embedding vector (optional)
+        doc_embeddings: Document embedding vectors (optional)
         
-    返回:
-        List[Dict[str, Any]]: 格式化后的源信息列表
+    Returns:
+        List[Dict[str, Any]]: Formatted source information list
     """
     sources = []
     
-    # 获取数据库连接
+    # Get database connection
     conn = get_db_connection(DB_PATH)
     cursor = conn.cursor()
     
     for i, doc in enumerate(retrieved_docs):
-        # 提取文档内容
+        # Extract document content
         content = doc.page_content
         
-        # 获取文档元数据
+        # Get document metadata
         metadata = doc.metadata
         source_path = metadata.get('source') if metadata else None
         
-        # 检查文档是否存在于数据库中
+        # Check if document exists in database
         if source_path:
             source_file = os.path.basename(source_path)
             cursor.execute(
@@ -137,66 +138,66 @@ def format_sources(retrieved_docs: List[Document], query_embedding=None, doc_emb
             )
             result = cursor.fetchone()
             if not result:
-                # 跳过不存在的文档
-                print(f"跳过不存在的文档: {source_path}")
+                # Skip non-existent document
+                print(f"Skipping non-existent document: {source_path}")
                 continue
                 
             document_id = result['id']
             document_name = result['original_filename']
         else:
-            document_name = "未知文档"
-            # 如果没有源路径，则无法确定文档ID
+            document_name = "Unknown Document"
+            # If no source path, document ID cannot be determined
             document_id = None
         
-        # 计算相关度分数 (如果提供了嵌入向量)
+        # Calculate relevance score (if embedding vectors are provided)
         relevance_score = None
         if query_embedding is not None and doc_embeddings is not None and i < len(doc_embeddings):
             relevance_score = calculate_relevance_score(query_embedding, doc_embeddings[i])
         
-        # 尝试从元数据中提取页码信息，确保它是数字类型
+        # Try to extract page number information from metadata, ensuring it's a numeric type
         page_number = None
         page_label = None
         
-        # 首先尝试获取页面标签，这通常是PDF中显示的实际页码
+        # First try to get page label, which is usually the actual page number displayed in PDF
         if metadata and 'page_label' in metadata:
             try:
                 page_label = metadata['page_label']
-                # 如果页面标签是数字，转换为整数用于跳转
+                # If page label is numeric, convert to integer for jumping
                 if isinstance(page_label, str) and page_label.isdigit():
                     page_number = int(page_label)
             except (ValueError, TypeError):
                 pass
         
-        # 如果没有标签或无法解析，回退到索引页码
+        # If no label or cannot parse, fall back to index page number
         if page_number is None and metadata and 'page' in metadata:
             try:
-                # 如果是字符串，尝试转换为整数
+                # If it's a string, try to convert to integer
                 if isinstance(metadata['page'], str):
                     page_number = int(metadata['page'].strip())
                 else:
                     page_number = int(metadata['page'])
                 
-                # 确保页码有效 (大于0)
+                # Ensure page number is valid (greater than 0)
                 if page_number < 1:
                     page_number = 1
             except (ValueError, TypeError):
-                print(f"无法解析页码: {metadata['page']}，使用默认值1")
+                print(f"Cannot parse page number: {metadata['page']}, using default value 1")
                 page_number = 1
         
-        # 创建源信息对象
+        # Create source information object
         source_info = {
             "document_name": document_name,
-            "document_id": document_id,  # 添加文档ID
-            "content": content,           # 保留完整内容用于高亮
-            "content_preview": content[:400] + "..." if len(content) > 400 else content,  # 增加预览长度为400个字符
+            "document_id": document_id,  # Add document ID
+            "content": content,           # Keep full content for highlighting
+            "content_preview": content[:400] + "..." if len(content) > 400 else content,  # Increase preview length to 400 characters
             "relevance_score": relevance_score,
-            "page": page_number,  # 直接包含处理后的页码
-            "page_label": page_label  # 包含原始页面标签
+            "page": page_number,  # Directly include processed page number
+            "page_label": page_label  # Include original page label
         }
         
-        # 如果有其他元数据，也可以添加
+        # If there are other metadata, they can be added
         if metadata:
-            # 过滤掉不需要的大型元数据 (如嵌入向量)
+            # Filter out unnecessary large metadata (like embedding vectors)
             filtered_metadata = {k: v for k, v in metadata.items() 
                                if k not in ['source'] and not isinstance(v, (list, np.ndarray)) 
                                or (isinstance(v, list) and len(v) < 20)}
@@ -204,174 +205,152 @@ def format_sources(retrieved_docs: List[Document], query_embedding=None, doc_emb
         
         sources.append(source_info)
     
-    # 关闭数据库连接
+    # Close database connection
     conn.close()
     
-    # 按相关度分数排序 (如果有)
+    # Sort sources by relevance score (if any)
     if sources and sources[0].get("relevance_score") is not None:
         sources.sort(key=lambda x: x.get("relevance_score", 0), reverse=True)
         # Filter out sources with relevance score below 70
-        sources = [s for s in sources if s.get("relevance_score", 0) >= 70]
+        sources = [s for s in sources if s.get("relevance_score", 0) >= relevance_score]
     
     return sources
 
-def clean_llm_response(response: str) -> str:
-    """
-    清理LLM响应中的内部思考和特殊标记
-    
-    参数:
-        response: LLM原始响应
-        
-    返回:
-        str: 清理后的响应
-    """
-    if not response:
-        return "抱歉，无法生成回答。"
-    
-    # 移除<think>...</think>块
-    import re
-    response = re.sub(r'<think>.*?</think>', '', response, flags=re.DOTALL)
-    
-    # 移除其他可能的思考标记
-    response = re.sub(r'\*\*思考：.*?\*\*', '', response, flags=re.DOTALL)
-    response = re.sub(r'\*\*thinking:.*?\*\*', '', response, flags=re.DOTALL)
-    response = re.sub(r'<thinking>.*?</thinking>', '', response, flags=re.DOTALL)
-    
-    # 移除常见的思考引导词
-    response = re.sub(r'(^|\n)让我思考一下[.：:][^\n]*\n', '\n', response)
-    response = re.sub(r'(^|\n)Let me think[.：:][^\n]*\n', '\n', response)
-    
-    # 移除XML和Markdown中常见的特殊标记
-    response = re.sub(r'</?[a-zA-Z][^>]*>', '', response)  # XML标签
-    
-    # 处理可能的引用格式保持一致
-    response = re.sub(r'```[a-zA-Z]*\n', '', response)  # 代码块开始标记
-    response = re.sub(r'```\n?', '', response)  # 代码块结束标记
-    
-    # 处理换行，保证段落之间有适当的空白
-    response = re.sub(r'\n{3,}', '\n\n', response)  # 多个换行替换为两个
-    
-    # 确保文本有适当的首尾格式
-    response = response.strip()
-    
-    return response
-
 def rerank_documents(query: str, docs: List[Document]) -> List[Document]:
     """
-    对文档进行重新排序，找出与查询最相关的文档
+    Re-rank documents to find the most relevant document to the query
     
-    参数:
-        query: 用户查询
-        docs: 检索到的文档列表
+    Parameters:
+        query: User query
+        docs: List of retrieved documents
         
-    返回:
-        List[Document]: 重新排序的文档列表
+    Returns:
+        List[Document]: Re-ranked document list
     """
     try:
-        # 这里可以使用第三方重排模型，如sentence-transformers中的CrossEncoder
-        # 简单实现：根据关键词匹配度排序
+        # Here you can use third-party re-ranking model, such as CrossEncoder in sentence-transformers
+        # Simple implementation: Sort by keyword matching score
         from collections import Counter
         
-        # 将查询拆分为关键词
+        # Split query into keywords
         import re
-        # 移除标点符号并转为小写
+        # Remove punctuation and convert to lowercase
         query_clean = re.sub(r'[^\w\s]', '', query.lower())
         query_terms = set(query_clean.split())
         
-        # 计算每个文档包含多少查询关键词
+        # Calculate how many documents contain how many query keywords
         doc_scores = []
         for doc in docs:
             content_clean = re.sub(r'[^\w\s]', '', doc.page_content.lower())
             content_terms = Counter(content_clean.split())
             
-            # 计算关键词匹配得分
+            # Calculate keyword matching score
             score = sum(content_terms[term] for term in query_terms if term in content_terms)
             doc_scores.append((doc, score))
         
-        # 按得分降序排序
+        # Sort by score in descending order
         doc_scores.sort(key=lambda x: x[1], reverse=True)
         return [doc for doc, _ in doc_scores]
     except Exception as e:
-        print(f"重新排序文档时出错: {str(e)}")
-        return docs  # 出错时返回原始文档顺序
+        print(f"Error re-ranking documents: {str(e)}")
+        return docs  # Return original document order if error
 
-def perform_query(input_query: str, kb_id: Optional[int] = None) -> Optional[Dict[str, Any]]:
+def perform_query(input_query: str, kb_id: Optional[int] = None, kb_ids: Optional[List[int]] = None, conversation_id: Optional[int] = None) -> Optional[Dict[str, Any]]:
     """
-    执行查询并返回回答与来源
+    Execute query and return answer and sources
     
-    参数:
-        input_query: 用户输入的查询
-        kb_id: 知识库ID (可选)
+    Parameters:
+        input_query: User input query
+        kb_id: Knowledge base ID (optional, single knowledge base query)
+        kb_ids: Knowledge base ID list (optional, multiple knowledge base queries)
+        conversation_id: Conversation ID (optional, for including conversation history)
         
-    返回:
-        Dict[str, Any]: 包含回答和源信息的响应对象，失败时返回带有错误信息的字典
+    Returns:
+        Dict[str, Any]: Response object containing answer and source information, failure returns dictionary with error information
     """
     if not input_query:
-        return {"error": "查询内容不能为空", "detail": "请提供一个有效的查询"}
+        return {"error": "Query content cannot be empty", "detail": "Please provide a valid query"}
     
     try:
-        # 从环境变量获取模型名称，并尝试匹配已安装的模型
+        # Get conversation history if conversation_id is provided
+        conversation_history = None
+        if conversation_id:
+            try:
+                from db_utils import get_conversation
+                conversation = get_conversation(DB_PATH, conversation_id)
+                if conversation:
+                    conversation_history = conversation.get('messages', [])
+            except Exception as conv_error:
+                print(f"Error retrieving conversation history: {str(conv_error)}")
+                # Continue without conversation history
+        
+        # Get model name from environment variable and try to match installed model
         import subprocess
         model_name = os.getenv('LLM_MODEL', 'deepseek-r1:14b')
         embedding_model_name = os.getenv('TEXT_EMBEDDING_MODEL', 'nomic-embed-text')
         
-        print(f"使用语言模型: {model_name}")
-        print(f"使用嵌入模型: {embedding_model_name}")
+        print(f"Using language model: {model_name}")
+        print(f"Using embedding model: {embedding_model_name}")
         
-        # 验证知识库ID (如果提供)
+        # Initialize language model
+        try:
+            llm = ChatOllama(model=model_name)
+        except Exception as model_error:
+            print(f"Error initializing language model: {str(model_error)}")
+            # Try using any available model that has been installed
+            try:
+                process = subprocess.run(['ollama', 'list'], capture_output=True, text=True)
+                models = process.stdout.strip().split('\n')[1:]  # Skip title line
+                if models:
+                    # Extract name of first available model
+                    available_model = models[0].split()[0]
+                    print(f"Trying to use available model: {available_model}")
+                    llm = ChatOllama(model=available_model)
+                else:
+                    return {
+                        "error": "Cannot initialize language model",
+                        "detail": f"Specified model {model_name} is not available and no other available models"
+                    }
+            except Exception as fallback_error:
+                return {
+                    "error": "Cannot initialize language model",
+                    "detail": f"Original error: {str(model_error)}, Fallback error: {str(fallback_error)}"
+                }
+                
+        # If kb_ids are provided, use multiple knowledge base query mode
+        if kb_ids and len(kb_ids) > 0:
+            print(f"Using multiple knowledge base query mode, Knowledge Base IDs: {kb_ids}")
+            return query_multiple_knowledge_bases(input_query, kb_ids, llm, conversation_history)
+                
+        # If no knowledge base ID is provided, use direct dialog mode
+        if kb_id is None and (not kb_ids or len(kb_ids) == 0):
+            print("No knowledge base ID provided, using direct dialog mode")
+            return direct_ai_chat(input_query, llm, kb_id, conversation_history)
+        
+        # Verify knowledge base ID (if provided)
         if kb_id is not None:
             from db_utils import check_knowledge_base_exists
             if not check_knowledge_base_exists(DB_PATH, kb_id):
                 return {
-                    "error": "知识库不存在",
-                    "detail": f"ID为{kb_id}的知识库不存在"
+                    "error": "Knowledge base does not exist",
+                    "detail": f"Knowledge base with ID {kb_id} does not exist"
                 }
         
-        # 初始化语言模型
-        try:
-            llm = ChatOllama(model=model_name)
-        except Exception as model_error:
-            print(f"初始化语言模型时出错: {str(model_error)}")
-            # 尝试使用已安装的任意可用模型
-            try:
-                process = subprocess.run(['ollama', 'list'], capture_output=True, text=True)
-                models = process.stdout.strip().split('\n')[1:]  # 跳过标题行
-                if models:
-                    # 提取第一个可用模型的名称
-                    available_model = models[0].split()[0]
-                    print(f"尝试使用可用模型: {available_model}")
-                    llm = ChatOllama(model=available_model)
-                else:
-                    return {
-                        "error": "无法初始化语言模型",
-                        "detail": f"指定的模型 {model_name} 不可用，且没有其他可用模型"
-                    }
-            except Exception as fallback_error:
-                return {
-                    "error": "无法初始化语言模型",
-                    "detail": f"原始错误: {str(model_error)}, 回退错误: {str(fallback_error)}"
-                }
-        
-        # 获取向量数据库实例
+        # Get vector database instance
         try:
             db = get_vector_db(kb_id)
-            # 检查向量数据库是否为空
+            # Check if vector database is empty
             if hasattr(db, '_collection') and db._collection.count() == 0:
-                return {
-                    "error": "知识库为空",
-                    "detail": f"知识库 {kb_id if kb_id else '默认'} 中没有文档，请先上传文档"
-                }
+                print(f"Knowledge base {kb_id} is empty, switching to direct dialog mode")
+                return direct_ai_chat(input_query, llm, kb_id, conversation_history)
         except Exception as db_error:
-            print(f"获取向量数据库时出错: {str(db_error)}")
-            return {
-                "error": "无法访问向量数据库",
-                "detail": str(db_error)
-            }
+            print(f"Error getting vector database: {str(db_error)}, switching to direct dialog mode")
+            return direct_ai_chat(input_query, llm, kb_id, conversation_history)
         
-        # 获取提示模板
+        # Get prompt templates
         query_prompt, answer_prompt = get_prompt()
 
-        # 设置多重查询检索器
+        # Set multiple query retriever
         try:
             retriever = MultiQueryRetriever.from_llm(
                 retriever=db.as_retriever(search_kwargs={"k": 8}),
@@ -379,74 +358,80 @@ def perform_query(input_query: str, kb_id: Optional[int] = None) -> Optional[Dic
                 prompt=query_prompt
             )
         except Exception as retriever_error:
-            print(f"创建检索器时出错: {str(retriever_error)}")
-            return {
-                "error": "无法创建文档检索器",
-                "detail": str(retriever_error)
-            }
+            print(f"Error creating retriever: {str(retriever_error)}, switching to direct dialog mode")
+            return direct_ai_chat(input_query, llm, kb_id, conversation_history)
         
-        # 执行检索以获取相关文档
+        # Execute retrieval to get relevant documents
         try:
             retrieved_docs = retriever.get_relevant_documents(input_query)
         except Exception as retrieve_error:
-            print(f"检索文档时出错: {str(retrieve_error)}")
-            return {
-                "error": "文档检索失败",
-                "detail": str(retrieve_error)
-            }
+            print(f"Error retrieving documents: {str(retrieve_error)}, switching to direct dialog mode")
+            return direct_ai_chat(input_query, llm, kb_id, conversation_history)
         
         if not retrieved_docs:
-            return {
-                "answer": "抱歉，没有找到相关的信息来回答您的问题。",
-                "sources": [],
-                "query": {
-                    "original": input_query,
-                    "kb_id": kb_id
-                }
-            }
+            print("No relevant documents found, switching to direct dialog mode")
+            return direct_ai_chat(input_query, llm, kb_id, conversation_history)
         
-        # 重新排序文档以提高相关性
+        # Re-rank documents to improve relevance
         reranked_docs = rerank_documents(input_query, retrieved_docs)
         
-        # 只使用前4个最相关的文档
+        # Only use the top 4 most relevant documents
         top_docs = reranked_docs[:4]
         
-        # 获取并格式化源信息 (包含相关度分数)
+        # Get and format source information (including relevance scores)
         try:
-            # 尝试获取嵌入向量以计算相关度
+            # Try to get embedding vectors to calculate relevance
             from langchain_community.embeddings import OllamaEmbeddings
             embedding_model = OllamaEmbeddings(model=embedding_model_name)
             query_embedding = embedding_model.embed_query(input_query)
             doc_embeddings = [embedding_model.embed_query(doc.page_content) for doc in top_docs]
             sources = format_sources(top_docs, query_embedding, doc_embeddings)
             
-            # 过滤掉相关度分数低于70的文档
-            relevant_sources = [s for s in sources if s.get("relevance_score", 0) >= 70]
+            # Filter out documents with relevance score below 70
+            relevant_sources = [s for s in sources if s.get("relevance_score", 0) >= relevance_score]
         except Exception as embed_error:
-            print(f"计算相关度分数时出错: {str(embed_error)}")
-            # 继续而不计算相关度分数
+            print(f"Error calculating relevance score: {str(embed_error)}")
+            # Continue without calculating relevance score
             sources = format_sources(top_docs)
             relevant_sources = sources
         
-        # 如果没有高相关度文档，直接使用AI回答问题
+        # If no high relevance documents, use AI to directly answer the question
         if not relevant_sources:
-            print("没有找到高相关度文档，使用AI直接回答问题")
+            print("No high relevance documents found, using AI to directly answer the question")
             try:
-                direct_prompt = ChatPromptTemplate.from_template("""You are an AI assistant from a sweden company named Alfer-AI. 
-                Your task is to answer the question based on your knowledge.
-                If you don't know the answer, just say you don't have enough information.
+                # Create a conversation-aware prompt
+                if conversation_history:
+                    print("Using conversation history for direct answer")
+                    chat_history = format_conversation_history(conversation_history)
+                    direct_prompt = ChatPromptTemplate.from_template("""You are an AI assistant from a sweden company named Alfer-AI. 
+                    Your task is to answer the question based on your knowledge and the conversation history.
+                    If you don't know the answer, just say you don't have enough information.
+                    
+                    Conversation history:
+                    {chat_history}
+                    
+                    Current question: {question}
+                    
+                    Please provide a clear, professional answer with the language of the question:
+                    """)
+                    
+                    formatted_prompt = direct_prompt.format(chat_history=chat_history, question=input_query)
+                else:
+                    direct_prompt = ChatPromptTemplate.from_template("""You are an AI assistant from a sweden company named Alfer-AI. 
+                    Your task is to answer the question based on your knowledge.
+                    If you don't know the answer, just say you don't have enough information.
+                    
+                    Question: {question}
+                    
+                    Please provide a clear, professional answer with the language of the question:
+                    """)
+                    
+                    formatted_prompt = direct_prompt.format(question=input_query)
                 
-                Question: {question}
-                
-                Please provide a clear, professional answer with the language of the question:
-                """)
-                
-                formatted_prompt = direct_prompt.format(question=input_query)
                 raw_answer = llm.invoke(formatted_prompt).content
-                clean_answer = clean_llm_response(raw_answer)
                 
                 response = {
-                    "answer": clean_answer,
+                    "answer": raw_answer,
                     "sources": sources,  # Include all sources even if they're low relevance
                     "query": {
                         "original": input_query,
@@ -457,32 +442,54 @@ def perform_query(input_query: str, kb_id: Optional[int] = None) -> Optional[Dic
                 
                 return response
             except Exception as llm_error:
-                print(f"生成直接回答时出错: {str(llm_error)}")
+                print(f"Error generating direct answer: {str(llm_error)}")
                 return {
-                    "error": "无法生成回答",
+                    "error": "Cannot generate answer",
                     "detail": str(llm_error)
                 }
         
-        # 使用高相关度文档作为上下文
+        # Use high relevance documents as context
         context = "\n\n".join([s["content"] for s in relevant_sources])
         
-        # 生成回答
+        # Generate answer with conversation history if available
         try:
-            formatted_prompt = answer_prompt.format(context=context, question=input_query)
+            if conversation_history:
+                print("Using conversation history for vector search answer")
+                chat_history = format_conversation_history(conversation_history)
+                conversation_answer_prompt = ChatPromptTemplate.from_template("""You are an AI assistant from a sweden company named Alfer-AI. 
+                Your task is to answer the question based on the context and conversation history below.
+                Provide a direct, concise answer.
+                
+                Conversation history:
+                {chat_history}
+                
+                Context:
+                {context}
+                
+                Current question: {question}
+                
+                Please provide a clear, professional answer with the language of the question:
+                """)
+                
+                formatted_prompt = conversation_answer_prompt.format(
+                    chat_history=chat_history, 
+                    context=context, 
+                    question=input_query
+                )
+            else:
+                formatted_prompt = answer_prompt.format(context=context, question=input_query)
+                
             raw_answer = llm.invoke(formatted_prompt).content
         except Exception as llm_error:
-            print(f"生成回答时出错: {str(llm_error)}")
+            print(f"Error generating answer: {str(llm_error)}")
             return {
-                "error": "无法生成回答",
+                "error": "Cannot generate answer",
                 "detail": str(llm_error)
             }
         
-        # 清理响应
-        clean_answer = clean_llm_response(raw_answer)
-        
-        # 组装最终响应
+        # Assemble final response
         response = {
-            "answer": clean_answer,
+            "answer": raw_answer,
             "sources": sources,  # Include all sources even if they're low relevance
             "query": {
                 "original": input_query,
@@ -492,10 +499,278 @@ def perform_query(input_query: str, kb_id: Optional[int] = None) -> Optional[Dic
         
         return response
     except Exception as e:
-        print(f"执行查询时发生错误: {str(e)}")
+        print(f"Error executing query: {str(e)}")
         import traceback
         traceback.print_exc()
         return {
-            "error": "查询执行失败",
+            "error": "Query execution failed",
+            "detail": str(e)
+        }
+
+def format_conversation_history(messages: List[Dict[str, Any]]) -> str:
+    """
+    Format conversation history for inclusion in prompt
+    
+    Parameters:
+        messages: List of conversation messages
+        
+    Returns:
+        str: Formatted conversation history
+    """
+    if not messages:
+        return ""
+    
+    formatted_history = []
+    for msg in messages:
+        if msg.get('message_type') == 'user':
+            formatted_history.append(f"User: {msg.get('content', '')}")
+        elif msg.get('message_type') == 'assistant':
+            formatted_history.append(f"Assistant: {msg.get('content', '')}")
+    
+    return "\n".join(formatted_history)
+
+def query_multiple_knowledge_bases(input_query: str, kb_ids: List[int], llm, conversation_history: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
+    """
+    Query multiple knowledge bases and merge results
+    
+    Parameters:
+        input_query: User input query
+        kb_ids: Knowledge base ID list
+        llm: Language model instance
+        conversation_history: Conversation history (optional)
+        
+    Returns:
+        Dict[str, Any]: Response object containing answer and merged source information
+    """
+    try:
+        print(f"Starting query multiple knowledge bases: {kb_ids}")
+        
+        # Get prompt templates
+        query_prompt, answer_prompt = get_prompt()
+        
+        # Store all knowledge base's relevant documents
+        all_sources = []
+        all_docs = []
+        
+        # Get embedding model
+        embedding_model_name = os.getenv('TEXT_EMBEDDING_MODEL', 'nomic-embed-text')
+        from langchain_community.embeddings import OllamaEmbeddings
+        embedding_model = OllamaEmbeddings(model=embedding_model_name)
+        
+        # Query each knowledge base
+        for kb_id in kb_ids:
+            try:
+                print(f"Querying knowledge base {kb_id}")
+                
+                # Verify knowledge base existence
+                from db_utils import check_knowledge_base_exists
+                if not check_knowledge_base_exists(DB_PATH, kb_id):
+                    print(f"Knowledge base {kb_id} does not exist, skipping")
+                    continue
+                
+                # Get vector database instance
+                db = get_vector_db(kb_id)
+                
+                # Check if vector database is empty
+                if hasattr(db, '_collection') and db._collection.count() == 0:
+                    print(f"Knowledge base {kb_id} is empty, skipping")
+                    continue
+                
+                # Set multiple query retriever
+                try:
+                    retriever = MultiQueryRetriever.from_llm(
+                        retriever=db.as_retriever(search_kwargs={"k": 5}),  # Each knowledge base gets fewer documents
+                        llm=llm,
+                        prompt=query_prompt
+                    )
+                    
+                    # Execute retrieval to get relevant documents
+                    docs = retriever.get_relevant_documents(input_query)
+                    
+                    if docs:
+                        # Re-rank documents to improve relevance
+                        reranked_docs = rerank_documents(input_query, docs)
+                        
+                        # Only keep the most relevant top 3 documents, avoid too many documents
+                        top_docs = reranked_docs[:3]
+                        
+                        # Calculate embedding vectors
+                        query_embedding = embedding_model.embed_query(input_query)
+                        doc_embeddings = [embedding_model.embed_query(doc.page_content) for doc in top_docs]
+                        
+                        # Format source information
+                        sources = format_sources(top_docs, query_embedding, doc_embeddings)
+                        
+                        # Filter out documents with relevance score below 65 (slightly lower threshold for multi-knowledge base query)
+                        relevant_sources = [s for s in sources if s.get("relevance_score", 0) >= 65]
+                        
+                        if relevant_sources:
+                            # Add knowledge base ID to source information
+                            for source in relevant_sources:
+                                source["knowledge_base_id"] = kb_id
+                            
+                            # Add relevant documents and source information to total list
+                            all_sources.extend(relevant_sources)
+                            all_docs.extend(top_docs)
+                            
+                            print(f"Found {len(relevant_sources)} relevant sources from knowledge base {kb_id}")
+                        else:
+                            print(f"Knowledge base {kb_id} did not find high relevance documents")
+                    else:
+                        print(f"Knowledge base {kb_id} did not find relevant documents")
+                except Exception as e:
+                    print(f"Error querying knowledge base {kb_id}: {str(e)}")
+                    continue
+            except Exception as e:
+                print(f"Error processing knowledge base {kb_id}: {str(e)}")
+                continue
+        
+        # If no relevant sources found, use direct dialog mode
+        if not all_sources:
+            print("No relevant information found in all knowledge bases, using direct dialog mode")
+            return direct_ai_chat(input_query, llm, None, conversation_history)
+        
+        # Sort all sources by relevance score
+        all_sources.sort(key=lambda x: x.get("relevance_score", 0), reverse=True)
+        
+        # Limit to use at most 10 sources, avoid too long context
+        top_sources = all_sources[:10]
+        
+        # Use high relevance documents as context
+        context = "\n\n".join([s["content"] for s in top_sources])
+        
+        # Generate answer
+        try:
+            # Use conversation history if available
+            if conversation_history:
+                print("Using conversation history for multi-knowledge base answer")
+                chat_history = format_conversation_history(conversation_history)
+                
+                multi_kb_prompt = ChatPromptTemplate.from_template("""You are an AI assistant from a sweden company named Alfer-AI. 
+                Your task is to answer the question based on the context provided from multiple knowledge bases and the conversation history.
+                Synthesize information from all relevant sources to provide a comprehensive answer.
+                Make sure to consider information from all knowledge bases.
+                
+                Conversation history:
+                {chat_history}
+                
+                Context:
+                {context}
+                
+                Current question: {question}
+                
+                Please provide a clear, professional answer with the language of the question:
+                """)
+                
+                formatted_prompt = multi_kb_prompt.format(
+                    chat_history=chat_history,
+                    context=context, 
+                    question=input_query
+                )
+            else:
+                # Use multiple knowledge base template without conversation history
+                multi_kb_prompt = ChatPromptTemplate.from_template("""You are an AI assistant from a sweden company named Alfer-AI. 
+                Your task is to answer the question based on the context provided from multiple knowledge bases.
+                Synthesize information from all relevant sources to provide a comprehensive answer.
+                Make sure to consider information from all knowledge bases.
+                
+                Context:
+                {context}
+                
+                Question: {question}
+                
+                Please provide a clear, professional answer with the language of the question:
+                """)
+                
+                formatted_prompt = multi_kb_prompt.format(context=context, question=input_query)
+                
+            raw_answer = llm.invoke(formatted_prompt).content
+            
+            # Assemble final response
+            response = {
+                "answer": raw_answer,
+                "sources": top_sources,
+                "query": {
+                    "original": input_query,
+                    "kb_ids": kb_ids
+                },
+                "is_multi_kb_query": True
+            }
+            
+            return response
+        except Exception as llm_error:
+            print(f"Error generating multi-knowledge base answer: {str(llm_error)}")
+            return {
+                "error": "Cannot generate answer",
+                "detail": str(llm_error)
+            }
+    except Exception as e:
+        print(f"Error querying multiple knowledge bases: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return direct_ai_chat(input_query, llm, None, conversation_history)
+
+def direct_ai_chat(input_query: str, llm, kb_id=None, conversation_history: Optional[List[Dict[str, Any]]] = None):
+    """
+    Use AI directly for dialog, without using knowledge base
+    
+    Parameters:
+        input_query: User input query
+        llm: Language model instance
+        kb_id: Knowledge base ID (optional, only for recording)
+        conversation_history: Conversation history (optional)
+        
+    Returns:
+        Dict[str, Any]: Response object containing answer
+    """
+    try:
+        # Use conversation-aware prompt if history is available
+        if conversation_history:
+            print("Using conversation history for direct chat")
+            chat_history = format_conversation_history(conversation_history)
+            
+            direct_prompt = ChatPromptTemplate.from_template("""You are an AI assistant from a sweden company named Alfer-AI. 
+            Your task is to answer the question based on your knowledge and the conversation history.
+            If you don't know the answer, just say you don't have enough information.
+            
+            Conversation history:
+            {chat_history}
+            
+            Current question: {question}
+            
+            Please provide a clear, professional answer with the language of the question:
+            """)
+            
+            formatted_prompt = direct_prompt.format(chat_history=chat_history, question=input_query)
+        else:
+            # Use simple prompt template for direct dialog without history
+            direct_prompt = ChatPromptTemplate.from_template("""You are an AI assistant from a sweden company named Alfer-AI. 
+            Your task is to answer the question based on your knowledge.
+            If you don't know the answer, just say you don't have enough information.
+            
+            Question: {question}
+            
+            Please provide a clear, professional answer with the language of the question:
+            """)
+            
+            formatted_prompt = direct_prompt.format(question=input_query)
+        
+        raw_answer = llm.invoke(formatted_prompt).content
+        
+        response = {
+            "answer": raw_answer,
+            "sources": [],  # No knowledge base documents as source
+            "query": {
+                "original": input_query,
+                "kb_id": kb_id
+            },
+            "is_direct_chat": True  # Mark this is direct dialog mode
+        }
+        
+        return response
+    except Exception as e:
+        print(f"Error in direct dialog mode: {str(e)}")
+        return {
+            "error": "Answer generation failed",
             "detail": str(e)
         }
