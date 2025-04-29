@@ -1,5 +1,5 @@
 # RAG from Álfer-AI
-
+We've built a ready-to-use local RAG software, feel free to leave any comment on this project.
 ## 🔧 Installation
 ```bash
 git clone https://github.com/heyjiacheng/Alfer-AI.git
